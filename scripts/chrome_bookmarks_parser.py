@@ -2,6 +2,7 @@ import re
 from bs4 import BeautifulSoup
 from datetime import datetime
 import sqlite3
+import logging
 
 def read_bookmarks_html(file_path):
     """Reads the bookmarks html file and returns the contents as a string"""
