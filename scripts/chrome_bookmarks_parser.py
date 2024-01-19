@@ -59,37 +59,10 @@ def parse_bookmarks(bookmark_dict):
 
     return bookmarks
 
-def export_bookmarks(bookmarks, db_path='bookmarks.db'):
-    """Exports the bookmarks to a sql file"""
-    db = sqlite3.connect(db_path)
-    cursor = db.cursor()
-
-    # Create the table if it doesn't exist
-    query = """
-    CREATE TABLE IF NOT EXISTS bookmarks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT,
-        url TEXT,
-        add_date TEXT,
-        folder TEXT
-    )
-    """
-    cursor.execute(query)
-
-    # Insert the bookmarks
-    query = """
-    INSERT INTO bookmarks (title, url, add_date, folder)
-    VALUES (?, ?, ?, ?)
-    """
-    cursor.executemany(query, bookmarks)
-    db.commit()
-    db.close()
-
 def parse(bookmarks_filepath):
     """Parses the bookmarks file and exports to a database
     Returns any bookmark folders that failed to parse"""
     soup = make_soup(read_bookmarks_html(bookmarks_filepath))
     bookmarks, failures = parse_folders(soup)
     bookmarks = parse_bookmarks(bookmarks)
-    export_bookmarks(bookmarks)
-    return failures
+    return bookmarks, failures

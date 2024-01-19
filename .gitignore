@@ -2,4 +2,4 @@ bookmarks_18_01_2024.html
 logs/
 bookmarks.db
 .python-version
-scripts/__pycache__/chrome_bookmarks_parser.cpython-310.pyc
+*.pyc
