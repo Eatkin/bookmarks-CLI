@@ -2,6 +2,7 @@ import curses
 import logging
 from scripts.database_utils import Database
 from scripts.chrome_bookmarks_parser import parse
+from scripts.components import Menu
 
 # Some semantical sugar
 state_history = []
@@ -15,6 +16,8 @@ class State():
         state_history.append(self)
         # Callbacks for when we regress to a prior state
         self.on_regress = None
+        # Set menu to None by default
+        self.menu = None
 
     def update(self):
         """Update the state"""
@@ -27,6 +30,9 @@ class State():
 
     def render(self):
         """Render the state"""
+        # Draw menu if it exists
+        if self.menu:
+            self.menu.render()
         pass
 
 class StateSetup(State):
@@ -34,6 +40,8 @@ class StateSetup(State):
     def __init__(self, stdscr):
         super().__init__(stdscr)
         self.database = None
+        # Create a blank menu for now
+        self.menu = Menu(self.stdscr, ["Test", "Test", "Test"], [None])
 
     def update(self):
         """Update the state"""
