@@ -4,15 +4,12 @@ import logging
 import atexit
 from datetime import datetime
 from time import sleep
-import scripts.chrome_bookmarks_parser as bookmarks_parser
-from scripts.database_utils import Database
+from scripts.states import StateSetup
 
 @atexit.register
 def cleanup():
     """Cleanup the logger and close database connection"""
     logging.shutdown()
-    if database:
-        database.close_database()
 
 def curses_init():
     """Initialize curses"""
@@ -38,30 +35,7 @@ def logging_init():
     return logger_filepath
 
 logger_filepath = logging_init()
-database = None
 
-def create_database(html_filepath, db_path='bookmarks.db'):
-    """Create a new database"""
-    # Parse the bookmarks
-    bookmarks, failures = bookmarks_parser.parse(html_filepath)
-    if len(failures) > 0:
-        logging.warning(f'Bookmarks folders failed to parse: {failures}')
-    else:
-        logging.info('Bookmarks parsed successfully')
-
-    db = Database(db_path=db_path)
-    db.export_bookmarks(bookmarks)
-    # Establish the database connection
-    db.load_database()
-
-    return db
-
-def load_database(db_path='bookmarks.db'):
-    """Load an existing database"""
-    db = Database(db_path=db_path)
-    db.load_database()
-
-    return db
 # --------------------------------------------------------------------------------
 # THE PLAN:
 # Use curses for the interface
@@ -74,13 +48,35 @@ def load_database(db_path='bookmarks.db'):
 # - View by date added
 # - Explore by date (pick year, month, probably not day, not enough)
 # --------------------------------------------------------------------------------
+# Additional components:
+# Menu panels (consist of ascii art border, rectangle and options)
+# Lists (long lists of items)
+# --------------------------------------------------------------------------------
 
 # Main loop
 def main():
     # Initialize curses
     stdscr = curses_init()
+    # Setup state
+    state = StateSetup(stdscr)
+    sleep_interval = 0.1
     while True:
-        pass
+        # Update and draw states
+        try:
+            state.update()
+        except Exception as e:
+            logging.warning(f"State failed to update: {state.__class__.__name__}")
+            logging.warning(e)
+            exit(1)
+
+        try:
+            state.render()
+        except Exception as e:
+            # Do no uncomment these unless needed cause they have the tendancy to spam the log file
+            # logging.warning(f"State failed to render: {state.__class__.__name__}")
+            # logging.warning(e)
+            exit(1)
+        sleep(sleep_interval)
 
 
 if __name__ == '__main__':
