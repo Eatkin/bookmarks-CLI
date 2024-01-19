@@ -17,6 +17,7 @@ def curses_init():
     curses.noecho()
     curses.cbreak()
     curses.start_color()
+    curses.curs_set(0)
 
     return stdscr
 
@@ -69,6 +70,9 @@ def main():
             logging.warning(e)
             exit(1)
 
+        # Clear the screen
+        stdscr.clear()
+
         try:
             state.render()
         except Exception as e:
@@ -76,6 +80,10 @@ def main():
             # logging.warning(f"State failed to render: {state.__class__.__name__}")
             # logging.warning(e)
             exit(1)
+
+        # Refresh the screen
+        stdscr.refresh()
+
         sleep(sleep_interval)
 
 
