@@ -38,4 +38,5 @@ class Colours():
 
     def get_colour(self, colour):
         """Returns a curses colour pair"""
-        return self.colours[colour]
+        # Default to white on black
+        return self.colours.get(colour, curses.color_pair(2))

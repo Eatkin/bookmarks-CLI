@@ -8,8 +8,12 @@ from scripts.states import StateSetup
 
 @atexit.register
 def cleanup():
-    """Cleanup the logger and close database connection"""
+    """Cleanup the logger and cleanup after Curses"""
     logging.shutdown()
+    # Clean up curses
+    curses.nocbreak()
+    curses.echo()
+    curses.endwin()
 
 def curses_init():
     """Initialize curses"""
@@ -18,6 +22,8 @@ def curses_init():
     curses.cbreak()
     curses.start_color()
     curses.curs_set(0)
+    stdscr.nodelay(True)
+    stdscr.keypad(True)
 
     return stdscr
 
@@ -64,11 +70,16 @@ def main():
     while True:
         # Update and draw states
         try:
-            state.update()
+            # Update function can return a new state to switch to
+            new_state = state.update()
+            if new_state is not None:
+                state = new_state
+                logging.info(f"Switching to state: {state.__class__.__name__}")
         except Exception as e:
             logging.warning(f"State failed to update: {state.__class__.__name__}")
             logging.warning(e)
             exit(1)
+
 
         # Clear the screen
         stdscr.clear()

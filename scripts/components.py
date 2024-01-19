@@ -1,4 +1,5 @@
 import curses
+import logging
 from scripts.colours import Colours
 from math import floor, ceil
 
@@ -25,9 +26,69 @@ class Menu():
         # Define scr
         self.stdscr = stdscr
 
+        # Scroll behaviour (wrap or scroll)
+        self.scroll_behaviour = 'wrap'
+
+        self.offset = 0
+
     def update(self):
-        """Get keyboard input to navigate the menu"""
-        pass
+        """Get keyboard input to navigate the menu,"""
+        # Clear inputs
+        self.stdscr.nodelay(True)
+        key = self.stdscr.getch()
+        vinput = 0
+        if key == curses.KEY_UP:
+            vinput -= 1
+        if key == curses.KEY_DOWN:
+            vinput += 1
+
+        # Update the selected item
+        self.selected += vinput
+
+        # scrolling behaviour
+        if self.scroll_behaviour == 'wrap':
+            self.selected = self.wrap(self.selected, 0, len(self.items) - 1)
+        elif self.scroll_behaviour == 'scroll':
+            self.offset, self.selected = self.scroll(self.offset, self.selected, 0, len(self.items) - 1)
+
+        # Check for enter key
+        if key == curses.KEY_ENTER or key in [10, 13]:
+            # Return the function for the state to call
+            return self.functions[self.selected]
+
+        return None
+
+    def clamp(self, n, min, max):
+        """Clamp a number between min and max"""
+        if n < min:
+            return min
+        elif n > max:
+            return max
+        else:
+            return n
+
+    def wrap(self, selection, min, max):
+        """Wrap a number between min and max"""
+        if selection < min:
+            return max
+        elif selection > max:
+            return min
+        else:
+            return selection
+
+    def scroll(self, scroll, selection, min, max):
+        """Scroll a number between min and max"""
+        # Clamp selection
+        selection = self.clamp(selection, min, max)
+
+        # Adjust scroll if needed
+        height, _ = self.stdscr.getmaxyx()
+        if selection < scroll:
+            scroll = selection
+        elif selection > scroll + height:
+            scroll = selection - height
+
+        return scroll, selection
 
     def render(self):
         """Render the menu"""
@@ -49,16 +110,17 @@ class Menu():
 
         # Draw menu options
         for index, item in enumerate(self.items):
-            padding = (self.width - len(item) - 2) // 2  # Padding on both sides
+            # Define padding
+            padding_left = (self.width - len(item) - 2) // 2
+            padding_right = self.width - len(item) - padding_left - 2
             yy = y + index + self.v_padding + 1
 
             if index == self.selected:
-                self.stdscr.addstr(yy, x, "|" + " ", col)
-                padding = (self.width - len(item) - 4) // 2  # Padding on both sides
-                self.stdscr.addstr(yy, x + 2, f"{' '*padding}{item}{' '*padding}", highlight_col)
-                self.stdscr.addstr(yy, x + self.width - 2, " " + "|", col)
+                self.stdscr.addstr(yy, x, "| ", col)
+                self.stdscr.addstr(yy, x + 2, f"{' '*(padding_left - 1)}{item}{' '*(padding_right + 1)}", highlight_col)
+                self.stdscr.addstr(yy, x + self.width - 2, " |", col)
             else:
-                item_str = f"|{' ' * padding}{item}{' ' * padding}|"
+                item_str = f"|{' ' * padding_left}{item}{' ' * padding_right}|"
                 self.stdscr.addstr(yy, x, item_str, col)
 
         # Draw bottom vertical padding
@@ -66,3 +128,22 @@ class Menu():
             self.stdscr.addstr(y + i + len(self.items) + self.v_padding + 1, x, "|" + " " * (self.width - 2) + "|", col)
         # Draw bottom border
         self.stdscr.addstr(y + len(self.items) + self.v_padding * 2 + 1, x, "+" + "-" * (self.width - 2) + "+", col)
+
+class MenuList(Menu):
+    """This is the same as menu with different rendering logic"""
+    def __init__(self, stdscr, items, functions, menu_title='Menu'):
+        super().__init__(stdscr, items, functions)
+
+        self.scroll_behaviour = 'scroll'
+
+    def render(self):
+        """Draw the list of menu items"""
+        # We slice items based on the offset
+        t_height, _ = self.stdscr.getmaxyx()
+        items_to_render = self.items[self.offset:self.offset + t_height]
+        for index, item in enumerate(items_to_render):
+            col = self.colours.get_colour('white_on_black')
+            if index + self.offset == self.selected:
+                col = self.colours.get_colour('black_on_white')
+            self.stdscr.addstr(item, col)
+            self.stdscr.addstr("\n")
