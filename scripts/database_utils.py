@@ -60,3 +60,13 @@ class Database():
 
         self.cursor.execute(query)
         return self.cursor.fetchall()
+
+    def get_random_bookmark(self):
+        query = """
+        SELECT * FROM bookmarks
+        ORDER BY RANDOM()
+        LIMIT 1
+        """
+
+        self.cursor.execute(query)
+        return self.cursor.fetchone()

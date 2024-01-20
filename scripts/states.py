@@ -3,6 +3,7 @@ import logging
 import os
 import atexit
 import webbrowser
+import re
 from datetime import datetime
 from enum import Enum
 from scripts.database_utils import Database
@@ -11,13 +12,17 @@ from scripts.components import Menu, MenuList
 from scripts.colours import Colours
 
 # TODO: Add a function to the database class that will return a list of all folders
-# TODO: Add a single bookmark viewer which gives bookmark details, which will allow us to go back or open the bookmark
+# TODO: Why is going to random bookmark, going back, then going to random bookmark again always the same bookmark?
+# TODO: Menu accounts for only the full terminal size instead of the available space - I should add a setting to menu that allows upper or lower positions
+# TODO: When viewing a single bookmark it makes sense to make it appear at the lower position
 
 # Some semantical sugar
 state_history = []
 
 # Globals
 database = None
+# A regex pattern for extracting the domain from a url
+url_pattern = re.compile(r'(https?://.*)/.*')
 
 # Register cleanup function
 @atexit.register
@@ -103,7 +108,7 @@ class State():
             return self.advance_state(function.state, function.args)
         elif function.type == FunctionType.REGRESS_STATE:
             # Regress to the previous state
-            return self.regress_state()
+            return self.regress_state(*function.args)
         elif function.type == FunctionType.FUNCTION:
             # Call the function
             function.function(*function.args)
@@ -127,7 +132,9 @@ class State():
         """Regress to the previous state"""
         global state_history
         # Remove the current state
-        state_history.pop()
+        old_state = state_history.pop()
+        # Delete it
+        del old_state
         # Get the previous state
         state = state_history[-1]
         # Set the callback for when we regress
@@ -205,9 +212,9 @@ class StateBookmarkExplorerIndex(State):
 
         # Create our menu which should display our options for viewing bookmarks
         # We'll start with a random and a back option
-        menu_items = ["Random Bookmark", "View By Folder", "View By Date Added", "Search", "Back"]
+        menu_items = ["Random Bookmark", "View By Category", "View By Date Added", "Search", "Back"]
         menu_functions = [
-            MenuFunction(FunctionType.FUNCTION, self.random_bookmark),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark()]),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
@@ -218,18 +225,16 @@ class StateBookmarkExplorerIndex(State):
 
     def random_bookmark(self):
         """Select a random bookmark"""
-        # TODO: This will be replaced by a state which will display the bookmark and allow us to go back or open it
-        # Query
-        query = """
-        SELECT * FROM bookmarks
-        ORDER BY RANDOM()"""
-        result = database.cursor.execute(query).fetchone()
-        url = result[2]
-        webbrowser.open(url)
+        logging.info("Getting random bookmark")
+        result = database.get_random_bookmark()
 
-        # Write to the log
-        logging.info(f"Random bookmark opened: {url}")
-        logging.info(f"Record: {result}")
+        return result
+
+    def reroll_random_bookmark(self):
+        """Reroll the random bookmark"""
+        logging.info("Rerolling random bookmark")
+        # Update the menu function to use the new bookmark
+        self.menu.functions[0].args[0] = self.random_bookmark()
 
 class StateSelectBookmarksFile(State):
     """State for selecting a bookmarks .html file
@@ -302,6 +307,58 @@ class StateSelectBookmarksFile(State):
     def database_exists(self, db_path='bookmarks.db'):
         """Check if a database exists"""
         return os.path.isfile(os.path.join(os.getcwd(), db_path))
+
+class StateBookmarkViewer(State):
+    """View details of a single bookmark"""
+    def __init__(self, stdscr, bookmark):
+        logging.info("Initialising StateBookmarkViewer")
+        super().__init__(stdscr)
+        # This is a tuple of the bookmark data
+        self.bookmark = bookmark
+
+        # Set up a menu which will allow us to go back or open the bookmark
+        menu_items = ["Open Bookmark", "Randomise", "Back"]
+        # Set on_regress for prior state
+        prev_state = state_history[-2]
+        menu_functions = [
+            MenuFunction(FunctionType.FUNCTION, self.open_bookmark),
+            MenuFunction(FunctionType.FUNCTION, self.get_random_bookmark),
+            MenuFunction(FunctionType.REGRESS_STATE, args=[prev_state.reroll_random_bookmark])
+            ]
+
+        self.menu = Menu(self.stdscr, menu_items, menu_functions, "Bookmark Viewer")
+
+    def get_random_bookmark(self):
+        """Get a new random bookmark"""
+        self.bookmark = database.get_random_bookmark()
+
+    def open_bookmark(self):
+        """Open the bookmark"""
+        webbrowser.open(self.bookmark[2])
+
+    def render_bookmark(self, id, title, url, date_added, category):
+        """Draws the bookmark details"""
+        # Convert date added to a datetime object and then format it
+        date_added = datetime.strptime(date_added, '%Y-%m-%d %H:%M:%S')
+        date_added = date_added.strftime('%d/%m/%Y')
+        # Convert URL to a domain
+        domain = url_pattern.match(url).group(1)
+
+
+        # Draw the bookmark details
+        self.stdscr.addstr(f"Category: {category}\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"Title: {title}\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"Date added: {date_added}\n", self.colours.get_colour('blue_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"URL: {domain}\n", self.colours.get_colour('cyan_on_black') | curses.A_BOLD)
+
+
+
+    def render(self):
+        """Render bookmark details"""
+        self.render_bookmark(*self.bookmark)
+
+        # Render menu
+        super().render()
 
 class StateExit(State):
     """State for exiting the program"""

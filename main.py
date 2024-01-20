@@ -82,8 +82,8 @@ def main():
             state.render()
         except Exception as e:
             # Do no uncomment these unless needed cause they have the tendancy to spam the log file
-            # logging.warning(f"State failed to render: {state.__class__.__name__}")
-            # logging.warning(e)
+            logging.warning(f"State failed to render: {state.__class__.__name__}")
+            logging.warning(e)
             exit(1)
 
         # Refresh the screen
