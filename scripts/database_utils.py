@@ -1,4 +1,5 @@
 import sqlite3
+import os
 
 
 class Database():
@@ -6,6 +7,10 @@ class Database():
         self.db_path = db_path
         self.db = None
         self.cursor = None
+
+    def database_exists(self):
+        """Returns true if the database exists"""
+        return os.path.exists(self.db_path)
 
     def open_database(self):
         """Loads the database"""
@@ -15,6 +20,12 @@ class Database():
     def close_database(self):
         """Closes the database"""
         self.db.close()
+        self.cursor = None
+        self.db = None
+
+    def database_is_connected(self):
+        """Returns true if the database is connected"""
+        return self.db is not None
 
     def export_bookmarks(self, bookmarks):
         """Exports the bookmarks to a sql file"""

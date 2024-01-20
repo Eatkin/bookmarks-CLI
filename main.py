@@ -46,18 +46,12 @@ logger_filepath = logging_init()
 # --------------------------------------------------------------------------------
 # THE PLAN:
 # Use curses for the interface
-# Use sqlite3 for the database
-# Options - parse bookmarks (select a file) or view bookmarks
 # Upon viewing bookmarks we have options for:
 # - Random Bookmark
 # - View By Folder (option for view all, and random pick from folder also)
 # - Search (by title, url, folder)
 # - View by date added
 # - Explore by date (pick year, month, probably not day, not enough)
-# --------------------------------------------------------------------------------
-# Additional components:
-# Menu panels (consist of ascii art border, rectangle and options)
-# Lists (long lists of items)
 # --------------------------------------------------------------------------------
 
 # Main loop

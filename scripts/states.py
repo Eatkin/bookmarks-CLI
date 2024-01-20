@@ -2,13 +2,16 @@ import curses
 import logging
 import os
 import atexit
-import traceback
+import webbrowser
 from datetime import datetime
 from enum import Enum
 from scripts.database_utils import Database
 from scripts.chrome_bookmarks_parser import parse
 from scripts.components import Menu, MenuList
 from scripts.colours import Colours
+
+# TODO: Add a function to the database class that will return a list of all folders
+# TODO: Add a single bookmark viewer which gives bookmark details, which will allow us to go back or open the bookmark
 
 # Some semantical sugar
 state_history = []
@@ -37,7 +40,7 @@ class MenuFunction():
     If type is FUNCTION then pass a function to the function argument along with any args
     If type is ADVANCE_STATE then pass a state to the state argument
     If type is REGRESS_STATE then nothing is needed other than the type"""
-    def __init__(self, function_type, function=None, args=None, state=None):
+    def __init__(self, function_type, function=None, args=[], state=None):
         self.type = function_type
         self.function = function
         self.args = args
@@ -97,8 +100,6 @@ class State():
         # Check the function type
         if function.type == FunctionType.ADVANCE_STATE:
             # Advance to the new state
-            if not function.args:
-                function.args = []
             return self.advance_state(function.state, function.args)
         elif function.type == FunctionType.REGRESS_STATE:
             # Regress to the previous state
@@ -142,7 +143,7 @@ class StateSetup(State):
         menu_items = ["Build Bookmarks Database", "Load Bookmarks Database", "Exit"]
         menu_functions = [
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateSelectBookmarksFile),
-            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerIndex),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit)
             ]
         self.menu = Menu(self.stdscr, menu_items, menu_functions, "Google Chrome Bookmarks Explorer")
@@ -180,6 +181,56 @@ class StateSetup(State):
         self.timer = self.timer_max
         self.t = datetime.now()
         self.display_message = "Database updated successfully"
+
+class StateBookmarkExplorerIndex(State):
+    """This state will load the database and display a menu for exploring bookmarks
+    It will give the user options for viewing bookmarks by folder, date added, etc
+    It should also check if the database exists and if not, throw an error"""
+    def __init__(self, stdscr):
+        """Open database connection if it isn't already open"""
+        super().__init__(stdscr)
+
+        global database
+
+        if not database:
+            database = Database()
+            # Check if database exists
+            if not database.database_exists():
+                # Do something
+                pass
+
+            # Open the database if it isn't already open
+            if not database.database_is_connected():
+                database.open_database()
+
+        # Create our menu which should display our options for viewing bookmarks
+        # We'll start with a random and a back option
+        menu_items = ["Random Bookmark", "View By Folder", "View By Date Added", "Search", "Back"]
+        menu_functions = [
+            MenuFunction(FunctionType.FUNCTION, self.random_bookmark),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
+            MenuFunction(FunctionType.REGRESS_STATE)
+            ]
+
+        self.menu = Menu(self.stdscr, menu_items, menu_functions, "Google Chrome Bookmarks Explorer")
+
+    def random_bookmark(self):
+        """Select a random bookmark"""
+        # TODO: This will be replaced by a state which will display the bookmark and allow us to go back or open it
+        # Query
+        query = """
+        SELECT * FROM bookmarks
+        ORDER BY RANDOM()"""
+        result = database.cursor.execute(query).fetchone()
+        url = result[2]
+        webbrowser.open(url)
+
+        # Write to the log
+        logging.info(f"Random bookmark opened: {url}")
+        logging.info(f"Record: {result}")
+
 
 
 class StateSelectBookmarksFile(State):
@@ -239,7 +290,6 @@ class StateSelectBookmarksFile(State):
 
     def create_database(self, html_filepath, db_path='bookmarks.db'):
         """Create a new database"""
-        global database
         # Parse the bookmarks
         bookmarks, failures = parse(html_filepath)
         if len(failures) > 0:
@@ -249,11 +299,7 @@ class StateSelectBookmarksFile(State):
 
         self.database = Database(db_path=db_path)
         self.database.export_bookmarks(bookmarks)
-        # Establish the database connection
-        self.database.open_database()
 
-        # Make the database globally accessible
-        database = self.database
 
     def database_exists(self, db_path='bookmarks.db'):
         """Check if a database exists"""
