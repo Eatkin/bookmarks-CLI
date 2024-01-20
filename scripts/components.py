@@ -2,9 +2,14 @@ import curses
 import logging
 from scripts.colours import Colours
 from math import floor, ceil
+from datetime import datetime
+import re
+
+# A regex pattern for extracting the domain from a url
+url_pattern = re.compile(r'https?://[w]*\.?([\w\d\._-]+)/?.*$')
 
 class Menu():
-    def __init__(self, stdscr, items, functions, menu_title='Menu'):
+    def __init__(self, stdscr, items, functions, menu_title='Menu', position="top"):
         """Initialise the menu"""
         # Define the menu items and selection
         self.menu_title = menu_title
@@ -19,6 +24,8 @@ class Menu():
         self.v_padding = 1
         # Add on the padding
         self.width += self.h_padding
+
+        self.position = position
 
         # Set up colours
         self.colours = Colours()
@@ -97,8 +104,14 @@ class Menu():
         col = self.colours.get_colour('white_on_blue')
         highlight_col = self.colours.get_colour('white_on_red')
         x = round((t_width - self.width) * 0.5)
-        # Add 1/4 of the height to the y position (looks better than central imo)
-        y = round((t_height - self.height) * 0.25)
+
+        # Set y position based on position attribute
+        if self.position == "top":
+            y = round((t_height - self.height) * 0.25)
+        elif self.position == "centre":
+            y = round((t_height - self.height) * 0.5)
+        elif self.position == "bottom":
+            y = round((t_height - self.height) * 0.75)
 
         # Draw menu title (absolute fucking hell please god let me never have to touch this again)
         title_padding = (self.width - len(self.menu_title) - 2) // 2  # Padding on both sides
@@ -147,3 +160,25 @@ class MenuList(Menu):
                 col = self.colours.get_colour('black_on_white')
             self.stdscr.addstr(item, col)
             self.stdscr.addstr("\n")
+
+class Bookmark():
+    def __init__(self, record):
+        """Initialise the bookmark"""
+        self.id = record[0]
+        self.title = record[1]
+        self.url = record[2]
+        self.add_date = record[3]
+        self.folder = record[4]
+
+        # Also some alternative formatting for the date
+        self.add_date_formatted = datetime.strptime(self.add_date, "%Y-%m-%d %H:%M:%S").strftime("%d/%m/%Y")
+
+        # Format the URL to get the domain name (including subdomains)
+        try:
+            self.domain = ".".join(url_pattern.match(self.url).group(1).split('.')[:-1])
+            # .co.uk domains will include the .co
+            if self.domain.endswith(".co"):
+                self.domain = self.domain[:-3]
+        except:
+            logging.warning(f"Failed to extract domain from url: {self.url}")
+            self.domain = "Unknown"

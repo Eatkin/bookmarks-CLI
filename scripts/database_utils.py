@@ -1,6 +1,6 @@
 import sqlite3
 import os
-
+from scripts.components import Bookmark
 
 class Database():
     def __init__(self, db_path='bookmarks.db'):
@@ -62,6 +62,7 @@ class Database():
         return self.cursor.fetchall()
 
     def get_random_bookmark(self):
+        """Return a random bookmark"""
         query = """
         SELECT * FROM bookmarks
         ORDER BY RANDOM()
@@ -69,4 +70,4 @@ class Database():
         """
 
         self.cursor.execute(query)
-        return self.cursor.fetchone()
+        return Bookmark(self.cursor.fetchone())

@@ -8,21 +8,19 @@ from datetime import datetime
 from enum import Enum
 from scripts.database_utils import Database
 from scripts.chrome_bookmarks_parser import parse
-from scripts.components import Menu, MenuList
+from scripts.components import Menu, MenuList, Bookmark
 from scripts.colours import Colours
 
 # TODO: Add a function to the database class that will return a list of all folders
-# TODO: Why is going to random bookmark, going back, then going to random bookmark again always the same bookmark?
 # TODO: Menu accounts for only the full terminal size instead of the available space - I should add a setting to menu that allows upper or lower positions
 # TODO: When viewing a single bookmark it makes sense to make it appear at the lower position
+# TODO: Add a bookmark class object so I can set properties and other shit lol (including domain and formatted date)
 
 # Some semantical sugar
 state_history = []
 
 # Globals
 database = None
-# A regex pattern for extracting the domain from a url
-url_pattern = re.compile(r'(https?://.*)/.*')
 
 # Register cleanup function
 @atexit.register
@@ -326,7 +324,7 @@ class StateBookmarkViewer(State):
             MenuFunction(FunctionType.REGRESS_STATE, args=[prev_state.reroll_random_bookmark])
             ]
 
-        self.menu = Menu(self.stdscr, menu_items, menu_functions, "Bookmark Viewer")
+        self.menu = Menu(self.stdscr, menu_items, menu_functions, "Bookmark Viewer", position="bottom")
 
     def get_random_bookmark(self):
         """Get a new random bookmark"""
@@ -336,26 +334,20 @@ class StateBookmarkViewer(State):
         """Open the bookmark"""
         webbrowser.open(self.bookmark[2])
 
-    def render_bookmark(self, id, title, url, date_added, category):
+    def render_bookmark(self, bookmark):
         """Draws the bookmark details"""
-        # Convert date added to a datetime object and then format it
-        date_added = datetime.strptime(date_added, '%Y-%m-%d %H:%M:%S')
-        date_added = date_added.strftime('%d/%m/%Y')
-        # Convert URL to a domain
-        domain = url_pattern.match(url).group(1)
-
-
         # Draw the bookmark details
-        self.stdscr.addstr(f"Category: {category}\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
-        self.stdscr.addstr(f"Title: {title}\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
-        self.stdscr.addstr(f"Date added: {date_added}\n", self.colours.get_colour('blue_on_black') | curses.A_BOLD)
-        self.stdscr.addstr(f"URL: {domain}\n", self.colours.get_colour('cyan_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"Category: {bookmark.folder}\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"Title: {bookmark.title}\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"Date added: {bookmark.add_date_formatted}\n", self.colours.get_colour('blue_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"Domain: {bookmark.domain}\n", self.colours.get_colour('cyan_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"URL: {bookmark.url}\n", self.colours.get_colour('white_on_black') | curses.A_BOLD)
 
 
 
     def render(self):
         """Render bookmark details"""
-        self.render_bookmark(*self.bookmark)
+        self.render_bookmark(self.bookmark)
 
         # Render menu
         super().render()
