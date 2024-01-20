@@ -2,6 +2,8 @@ import curses
 import logging
 import os
 import atexit
+import traceback
+from datetime import datetime
 from enum import Enum
 from scripts.database_utils import Database
 from scripts.chrome_bookmarks_parser import parse
@@ -57,6 +59,7 @@ class State():
         # We can set the value of update_function to a function that will be called (e.g. to regress to a prior state)
         # It can return a new state to switch to or None
         self.update_function = None
+        self.update_function_args = []
 
         # Set up colours
         self.colours = Colours()
@@ -66,11 +69,13 @@ class State():
         # These are one time functions that are called when we regress to a prior state
         # Useful for passing data between states
         if self.on_regress:
+            self.on_regress()
             self.on_regress = None
 
         if self.update_function:
-            val = self.update_function()
+            val = self.update_function(*self.update_function_args)
             self.update_function = None
+            self.update_function_args = []
             if val:
                 return val
 
@@ -102,6 +107,7 @@ class State():
             # Call the function
             function.function(*function.args)
             return None
+
 
     def render(self):
         """Render the state"""
@@ -141,15 +147,40 @@ class StateSetup(State):
             ]
         self.menu = Menu(self.stdscr, menu_items, menu_functions, "Google Chrome Bookmarks Explorer")
 
+        self.display_message = None
+        self.timer_max = 3
+        self.timer = 0
+        self.t = datetime.now()
+
     def update(self):
         """Update the state"""
+        # Update timer if necessary
+        if self.timer > 0:
+            dt = datetime.now() - self.t
+            self.timer -= dt.total_seconds()
+            self.t = datetime.now()
+            if self.timer <= 0:
+                self.display_message = None
+
         return super().update()
-        pass
+
 
     def render(self):
         """Render the state"""
+        # Display a message if necessary
+        if self.display_message:
+            self.stdscr.addstr(self.display_message, self.colours.get_colour('yellow_on_black') | curses.A_ITALIC)
+            self.stdscr.addstr("\n")
+
         super().render()
-        pass
+
+
+    def on_db_update(self):
+        """Callback for when the database is updated - used to display a message to the user"""
+        self.timer = self.timer_max
+        self.t = datetime.now()
+        self.display_message = "Database updated successfully"
+
 
 class StateSelectBookmarksFile(State):
     """State for selecting a bookmarks .html file
@@ -186,6 +217,9 @@ class StateSelectBookmarksFile(State):
 
         # Set the update function to regress to the previous state
         self.update_function = self.regress_state
+        state_previous = state_history[-2]
+        # This will set the on_regress callback
+        self.update_function_args = [state_previous.on_db_update]
 
     def update(self):
         return super().update()
