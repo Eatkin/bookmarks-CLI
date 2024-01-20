@@ -94,6 +94,7 @@ def main():
 
         # Refresh the screen
         stdscr.refresh()
+        curses.doupdate()
 
         sleep(sleep_interval)
 

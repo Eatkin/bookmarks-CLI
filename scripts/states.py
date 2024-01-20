@@ -53,6 +53,11 @@ class State():
         # Set menu to None by default
         self.menu = None
 
+        # update_function is a function that is called when the state is updated
+        # We can set the value of update_function to a function that will be called (e.g. to regress to a prior state)
+        # It can return a new state to switch to or None
+        self.update_function = None
+
         # Set up colours
         self.colours = Colours()
 
@@ -61,8 +66,13 @@ class State():
         # These are one time functions that are called when we regress to a prior state
         # Useful for passing data between states
         if self.on_regress:
-            self.on_regress()
             self.on_regress = None
+
+        if self.update_function:
+            val = self.update_function()
+            self.update_function = None
+            if val:
+                return val
 
         if self.menu:
             callback = self.menu.update()
@@ -129,7 +139,7 @@ class StateSetup(State):
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit)
             ]
-        self.menu = Menu(self.stdscr, menu_items, menu_functions)
+        self.menu = Menu(self.stdscr, menu_items, menu_functions, "Google Chrome Bookmarks Explorer")
 
     def update(self):
         """Update the state"""
@@ -174,6 +184,9 @@ class StateSelectBookmarksFile(State):
         # Create the database
         self.create_database(self.filepath)
 
+        # Set the update function to regress to the previous state
+        self.update_function = self.regress_state
+
     def update(self):
         return super().update()
 
@@ -184,7 +197,7 @@ class StateSelectBookmarksFile(State):
         else:
             if self.database_exists():
                 self.stdscr.addstr("Database already exists, it will be overwritten if you build a new database\n", self.colours.get_colour('red_on_black'))
-            self.stdscr.addstr("Select a bookmarks file", self.colours.get_colour('white_on_black'))
+            self.stdscr.addstr("Select a bookmarks file to build the database from", self.colours.get_colour('white_on_black'))
 
         self.stdscr.addstr("\n")
 
