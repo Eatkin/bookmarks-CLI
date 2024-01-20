@@ -231,8 +231,6 @@ class StateBookmarkExplorerIndex(State):
         logging.info(f"Random bookmark opened: {url}")
         logging.info(f"Record: {result}")
 
-
-
 class StateSelectBookmarksFile(State):
     """State for selecting a bookmarks .html file
     Used for creating a new database"""
