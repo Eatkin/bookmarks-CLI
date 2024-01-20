@@ -71,3 +71,13 @@ class Database():
 
         self.cursor.execute(query)
         return Bookmark(self.cursor.fetchone())
+
+    def get_bookmarks_by_category(self, category):
+        """Returns all bookmarks in a category"""
+        query = """
+        SELECT * FROM bookmarks
+        WHERE folder = ?
+        """
+
+        self.cursor.execute(query, (category,))
+        return [Bookmark(record) for record in self.cursor.fetchall()]

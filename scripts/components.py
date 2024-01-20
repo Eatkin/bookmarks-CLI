@@ -6,7 +6,8 @@ from datetime import datetime
 import re
 
 # A regex pattern for extracting the domain from a url
-url_pattern = re.compile(r'https?://[w]*\.?([\w\d\._-]+)/?.*$')
+url_pattern = re.compile(r'(?:\w+)?(?:\://)?(?:w{3}\.)?([\w\d\._-]+)/?.*$')
+
 
 class Menu():
     def __init__(self, stdscr, items, functions, menu_title='Menu', position="top"):

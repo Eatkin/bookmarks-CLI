@@ -11,10 +11,11 @@ from scripts.chrome_bookmarks_parser import parse
 from scripts.components import Menu, MenuList, Bookmark
 from scripts.colours import Colours
 
-# TODO: Add a function to the database class that will return a list of all folders
-# TODO: Menu accounts for only the full terminal size instead of the available space - I should add a setting to menu that allows upper or lower positions
-# TODO: When viewing a single bookmark it makes sense to make it appear at the lower position
-# TODO: Add a bookmark class object so I can set properties and other shit lol (including domain and formatted date)
+# TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
+# TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
+# TODO: Probably should allow escape to go back to the previous state
+# TODO: ^ We can basically see if there's a back option in the menu and if so activate the associated function
+# TODO: Reorder the main menu cause we probably want to view the database more than we want to build it
 
 # Some semantical sugar
 state_history = []
@@ -213,8 +214,8 @@ class StateBookmarkExplorerIndex(State):
         menu_items = ["Random Bookmark", "View By Category", "View By Date Added", "Search", "Back"]
         menu_functions = [
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark()]),
-            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
-            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerByCategory),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerByYear),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
             MenuFunction(FunctionType.REGRESS_STATE)
             ]
@@ -233,6 +234,51 @@ class StateBookmarkExplorerIndex(State):
         logging.info("Rerolling random bookmark")
         # Update the menu function to use the new bookmark
         self.menu.functions[0].args[0] = self.random_bookmark()
+
+# WIP
+class StateBookmarkExplorerByCategory(State):
+    """Display each bookmark category as a menu item"""
+    def __init__(self, stdscr):
+        super().__init__(stdscr)
+        categories = database.get_categories()
+        # Unpack the tuples
+        menu_items = [category[0] for category in categories]
+        # Functions are just advance state to the bookmark list state
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarksList, args=[database.get_bookmarks_by_category(category[0])]) for category in categories]
+
+        # Add on the back option
+        menu_items.append("Back")
+        menu_functions.append(MenuFunction(FunctionType.REGRESS_STATE))
+
+        self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Category")
+
+
+# WIP
+class StateBookmarkExplorerByYear(State):
+    """Display every year as a menu item"""
+    def __init__(self, stdscr):
+        super().__init__(stdscr)
+        # Here we will get all the years from the database
+        # Then create a list menu from it
+
+# WIP
+class StateBookmarkExplorerByMonth(State):
+    """Display all bookmarks in a certain month and year"""
+    def __init__(self, stdscr, year, month):
+        super().__init__(stdscr)
+        self.year = year
+        self.month = month
+        # Here we will get all the bookmarks in the month and year via query to the database
+        # Then create a list menu from it
+
+# WIP
+class StateBookmarksList(State):
+    """Display a list of bookmarks that are passed to the state"""
+    def __init__(self, stdscr, bookmarks):
+        super().__init__(stdscr)
+        # Bookmarks should be passed as a list of bookmark object
+        self.bookmarks = bookmarks
+        # Here we will create a list menu from the bookmarks - also include a randomise option at the top
 
 class StateSelectBookmarksFile(State):
     """State for selecting a bookmarks .html file
@@ -340,7 +386,8 @@ class StateBookmarkViewer(State):
         self.stdscr.addstr(f"Category: {bookmark.folder}\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
         self.stdscr.addstr(f"Title: {bookmark.title}\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
         self.stdscr.addstr(f"Date added: {bookmark.add_date_formatted}\n", self.colours.get_colour('blue_on_black') | curses.A_BOLD)
-        self.stdscr.addstr(f"Domain: {bookmark.domain}\n", self.colours.get_colour('cyan_on_black') | curses.A_BOLD)
+        # This isn't THAT useful so I'll miss it out, also sometimes it's wrong or blank or unknown
+        # self.stdscr.addstr(f"Domain: {bookmark.domain}\n", self.colours.get_colour('cyan_on_black') | curses.A_BOLD)
         self.stdscr.addstr(f"URL: {bookmark.url}\n", self.colours.get_colour('white_on_black') | curses.A_BOLD)
 
 
