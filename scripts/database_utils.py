@@ -32,6 +32,13 @@ class Database():
         db = sqlite3.connect(self.db_path)
         cursor = db.cursor()
 
+        # Delete the table first because we don't want duplicates
+        query = """
+        DROP TABLE IF EXISTS bookmarks
+        """
+
+        cursor.execute(query)
+
         # Create the table if it doesn't exist
         query = """
         CREATE TABLE IF NOT EXISTS bookmarks (
@@ -56,6 +63,7 @@ class Database():
     def get_categories(self):
         query = """
         SELECT DISTINCT folder FROM bookmarks
+        ORDER BY folder ASC
         """
 
         self.cursor.execute(query)
@@ -77,6 +85,7 @@ class Database():
         query = """
         SELECT * FROM bookmarks
         WHERE folder = ?
+        ORDER BY title ASC
         """
 
         self.cursor.execute(query, (category,))

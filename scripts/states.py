@@ -3,7 +3,7 @@ import logging
 import os
 import atexit
 import webbrowser
-import re
+from random import choice
 from datetime import datetime
 from enum import Enum
 from scripts.database_utils import Database
@@ -16,6 +16,9 @@ from scripts.colours import Colours
 # TODO: Probably should allow escape to go back to the previous state
 # TODO: ^ We can basically see if there's a back option in the menu and if so activate the associated function
 # TODO: Reorder the main menu cause we probably want to view the database more than we want to build it
+# TODO: Randomise in the bookmark viewer randomises ALL but should maybe have restrictions
+# TODO: Should be able to pick random category
+# TODO: Bookmarks list state should have a heading with the category name or whatever
 
 # Some semantical sugar
 state_history = []
@@ -235,7 +238,6 @@ class StateBookmarkExplorerIndex(State):
         # Update the menu function to use the new bookmark
         self.menu.functions[0].args[0] = self.random_bookmark()
 
-# WIP
 class StateBookmarkExplorerByCategory(State):
     """Display each bookmark category as a menu item"""
     def __init__(self, stdscr):
@@ -279,6 +281,25 @@ class StateBookmarksList(State):
         # Bookmarks should be passed as a list of bookmark object
         self.bookmarks = bookmarks
         # Here we will create a list menu from the bookmarks - also include a randomise option at the top
+        menu_items = ["Randomise"] + [bookmark.title for bookmark in self.bookmarks]
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark()])]
+        menu_functions += [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[bookmark]) for bookmark in self.bookmarks]
+
+        # Add the back option
+        menu_items.append("Back")
+        menu_functions.append(MenuFunction(FunctionType.REGRESS_STATE))
+
+        self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks List")
+
+    def random_bookmark(self):
+        """Get a new random bookmark"""
+        # Update the menu function to use the new bookmark
+        return choice(self.bookmarks)
+
+    def reroll_random_bookmark(self):
+        """Reroll the random bookmark"""
+        self.menu.functions[0].args[0] = self.random_bookmark()
+
 
 class StateSelectBookmarksFile(State):
     """State for selecting a bookmarks .html file
