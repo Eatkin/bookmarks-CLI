@@ -37,6 +37,8 @@ class Menu():
         # Scroll behaviour (wrap or scroll)
         self.scroll_behaviour = 'wrap'
 
+        # Min will be 2 but this will get updated in render
+        self.menu_title_height = 2
         self.offset = 0
 
     def update(self):
@@ -91,9 +93,10 @@ class Menu():
 
         # Adjust scroll if needed
         height, _ = self.stdscr.getmaxyx()
+
         if selection < scroll:
             scroll = selection
-        elif selection >= scroll + height - 1:
+        elif selection >= scroll + height - 1 - self.menu_title_height:
             scroll += 1
 
         return scroll, selection
@@ -146,34 +149,88 @@ class Menu():
 class MenuList(Menu):
     """This is the same as menu with different rendering logic"""
     def __init__(self, stdscr, items, functions, menu_title='Menu'):
-        super().__init__(stdscr, items, functions)
+        super().__init__(stdscr, items, functions, menu_title)
 
         self.scroll_behaviour = 'scroll'
 
     def render(self):
         """Draw the list of menu items"""
+        # Get terminal size
+        t_height, t_width = self.stdscr.getmaxyx()
+
+        # First draw menu title
+        # Get the y pos
+        y, x = self.stdscr.getyx()
+        # Draw menu title in italic yellow
+        col = self.colours.get_colour('yellow_on_black')
+        xoffset = round((t_width - len(self.menu_title)) * 0.5)
+        self.stdscr.addstr(" " * xoffset + self.menu_title, col | curses.A_ITALIC)
+        self.stdscr.addstr("\n")
+        # Draw a line under the title
+        self.stdscr.addstr("." * t_width, col)
+        dy = self.stdscr.getyx()[0] - y
+
+        # Update menu title height
+        self.menu_title_height = dy
+
+        # Call the scroll function to adjust the scroll if needed
+        self.offset, self.selected = self.scroll(self.offset, self.selected, 0, len(self.items) - 1)
+
         # We slice items based on the offset
-        t_height, _ = self.stdscr.getmaxyx()
-        items_to_render = self.items[self.offset:self.offset + t_height]
+        items_to_render = self.items[self.offset:self.offset + t_height - dy]
         # Draw the items - this will except if it goes out of bounds
         for index, item in enumerate(items_to_render):
             try:
                 col = self.colours.get_colour('white_on_black')
                 if index + self.offset == self.selected:
                     col = self.colours.get_colour('black_on_white')
-                self.stdscr.addstr(item, col)
+
+                # Centre the item
+                if len(item) < t_width:
+                    xoffset = floor((t_width - len(item)) * 0.5)
+                    self.stdscr.addstr(" " * xoffset)
+                    self.stdscr.addstr(item, col)
+                else:
+                    try:
+                        # We need to do string slicing to get the item to fit
+                        # Split string and add one word at a time until we overflow the terminal
+                        words = item.split(" ")
+                        lines = [""]
+                        lines_index = 0
+                        for word in words:
+                            if len(lines[lines_index]) + len(word) + 1 < t_width:
+                                lines[lines_index] += word + " "
+                            else:
+                                # Cut the last space
+                                lines[lines_index] = lines[lines_index][:-1]
+                                lines_index += 1
+                                lines.append(word + " ")
+
+                        # Now we can draw the lines centred
+                        for i, line in enumerate(lines):
+                            xoffset = floor((t_width - len(line)) * 0.5)
+                            self.stdscr.addstr(" " * xoffset)
+                            self.stdscr.addstr(line, col)
+                            if i < len(lines) - 1:
+                                self.stdscr.addstr("\n")
+                    except Exception as e:
+                        logging.warning(f"Failed to draw item: {item}")
+                        logging.warning(e)
+                        break
+
                 try:
-                    self.stdscr.addstr("\n", col)
+                    self.stdscr.addstr("\n")
                 except:
                     break
             except Exception as e:
                 # In this case we've gone out of bounds so ensure selection is within bounds
+                # I don't think this ever happens
                 y, _ = self.stdscr.getyx()
                 if y > t_height:
                     # This will adjust the scroll if needed
-                    if index - self.offset <= self.selected:
-                        logging.debug(f"Adjusting scroll up by {y - t_height}")
-                        self.offset -= (y - t_height)
+                    if index - self.offset - dy <= self.selected:
+                        logging.debug(f"Adjusting scroll up by {y - t_height - dy}")
+                        self.offset -= (y - t_height - dy)
                         self.stdscr.clear()
                         self.stdscr.refresh()
                         self.render()

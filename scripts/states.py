@@ -248,7 +248,7 @@ class StateBookmarkExplorerByCategory(State):
         # Unpack the tuples
         menu_items = [category[0] for category in categories]
         # Functions are just advance state to the bookmark list state
-        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarksList, args=[database.get_bookmarks_by_category(category[0])]) for category in categories]
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarksList, args=[database.get_bookmarks_by_category(category[0]), category[0]]) for category in categories]
 
         # Add on the back option
         menu_items.append("Back")
@@ -278,7 +278,7 @@ class StateBookmarkExplorerByMonth(State):
 # WIP
 class StateBookmarksList(State):
     """Display a list of bookmarks that are passed to the state"""
-    def __init__(self, stdscr, bookmarks):
+    def __init__(self, stdscr, bookmarks, menu_title="Remember to set a title"):
         super().__init__(stdscr)
         # Bookmarks should be passed as a list of bookmark object
         self.bookmarks = bookmarks
@@ -291,7 +291,7 @@ class StateBookmarksList(State):
         menu_items.append("Back")
         menu_functions.append(MenuFunction(FunctionType.REGRESS_STATE))
 
-        self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks List")
+        self.menu = MenuList(self.stdscr, menu_items, menu_functions, menu_title)
 
     def random_bookmark(self):
         """Get a new random bookmark"""
