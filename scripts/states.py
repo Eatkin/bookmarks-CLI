@@ -19,6 +19,8 @@ from scripts.colours import Colours
 # TODO: Randomise in the bookmark viewer randomises ALL but should maybe have restrictions
 # TODO: Should be able to pick random category
 # TODO: Bookmarks list state should have a heading with the category name or whatever
+# TODO: We already have a title for the menus so we can just use that and render differently in list style
+# TODO: Make list style menu centre in available space (horizontally)
 
 # Some semantical sugar
 state_history = []

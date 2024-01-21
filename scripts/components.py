@@ -93,7 +93,7 @@ class Menu():
         height, _ = self.stdscr.getmaxyx()
         if selection < scroll:
             scroll = selection
-        elif selection >= scroll + height:
+        elif selection >= scroll + height - 1:
             scroll += 1
 
         return scroll, selection
@@ -155,16 +155,29 @@ class MenuList(Menu):
         # We slice items based on the offset
         t_height, _ = self.stdscr.getmaxyx()
         items_to_render = self.items[self.offset:self.offset + t_height]
+        # Draw the items - this will except if it goes out of bounds
         for index, item in enumerate(items_to_render):
             try:
                 col = self.colours.get_colour('white_on_black')
                 if index + self.offset == self.selected:
                     col = self.colours.get_colour('black_on_white')
                 self.stdscr.addstr(item, col)
-                self.stdscr.addstr("\n")
+                try:
+                    self.stdscr.addstr("\n", col)
+                except:
+                    break
             except Exception as e:
-                logging.warning(f"Failed to render item: {item}")
-                logging.warning(e)
+                # In this case we've gone out of bounds so ensure selection is within bounds
+                y, _ = self.stdscr.getyx()
+                if y > t_height:
+                    # This will adjust the scroll if needed
+                    if index - self.offset <= self.selected:
+                        logging.debug(f"Adjusting scroll up by {y - t_height}")
+                        self.offset -= (y - t_height)
+                        self.stdscr.clear()
+                        self.stdscr.refresh()
+                        self.render()
+                    break
 
 class Bookmark():
     def __init__(self, record):
