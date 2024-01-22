@@ -13,7 +13,6 @@ from scripts.colours import Colours
 
 # TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
 # TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
-# TODO: Reorder the main menu cause we probably want to view the database more than we want to build it
 # TODO: Randomise in the bookmark viewer randomises ALL but should maybe have restrictions
 # TODO: ^ Add a 'restriction' option to the menu which will allow us to add a line to the SQL query used to get the random bookmark
 # TODO: Should be able to pick random category
@@ -245,7 +244,7 @@ class StateBookmarkExplorerByCategory(State):
         # Unpack the tuples
         menu_items = [category[0] for category in categories]
         # Functions are just advance state to the bookmark list state
-        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarksList, args=[database.get_bookmarks_by_category(category[0]), category[0]]) for category in categories]
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarksList, args=[database.get_bookmarks_by_category(category[0]), f"{category[0]} Bookmarks", "category"]) for category in categories]
 
         # Add on the back option
         menu_items.append("Back")
@@ -273,14 +272,22 @@ class StateBookmarkExplorerByMonth(State):
 
 class StateBookmarksList(State):
     """Display a list of bookmarks that are passed to the state"""
-    def __init__(self, stdscr, bookmarks, menu_title="Remember to set a title"):
+    def __init__(self, stdscr, bookmarks, menu_title="Remember to set a title", by="category"):
         super().__init__(stdscr)
         # Bookmarks should be passed as a list of bookmark object
         self.bookmarks = bookmarks
         # Here we will create a list menu from the bookmarks - also include a randomise option at the top
         menu_items = ["Randomise"] + [bookmark.title for bookmark in self.bookmarks]
-        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark()])]
-        menu_functions += [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[bookmark]) for bookmark in self.bookmarks]
+        category = self.bookmarks[0].folder
+
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark(), True, f"folder = \"{category}\""])]
+        # Disable randomisation for viewing a single bookmark
+        menu_functions += [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[bookmark, False]) for bookmark in self.bookmarks]
+
+        # If there's only one bookmark in the bookmarks list pop off the randomise option
+        if len(self.bookmarks) == 1:
+            menu_items.pop(0)
+            menu_functions.pop(0)
 
         # Add the back option
         menu_items.append("Back")
@@ -401,11 +408,13 @@ class StateSelectBookmarksFile(State):
 
 class StateBookmarkViewer(State):
     """View details of a single bookmark"""
-    def __init__(self, stdscr, bookmark):
+    def __init__(self, stdscr, bookmark, randomise=True, restrictions=None):
         logging.info("Initialising StateBookmarkViewer")
         super().__init__(stdscr)
         # This is a tuple of the bookmark data
         self.bookmark = bookmark
+        self.restrictions = restrictions
+        self.randomise = randomise
 
         # Set up a menu which will allow us to go back or open the bookmark
         menu_items = ["Open Bookmark", "Randomise", "Back"]
@@ -417,15 +426,33 @@ class StateBookmarkViewer(State):
             MenuFunction(FunctionType.REGRESS_STATE, args=[prev_state.reroll_random_bookmark])
             ]
 
+        # We can turn randomise off if we want
+        if not self.randomise:
+            # Just pop out value 1
+            # Yes this is bad practice but also fuck off
+            menu_items.pop(1)
+            menu_functions.pop(1)
+
         self.menu = Menu(self.stdscr, menu_items, menu_functions, "Bookmark Viewer", position="bottom")
 
     def get_random_bookmark(self):
         """Get a new random bookmark"""
-        self.bookmark = database.get_random_bookmark()
+        new_bookmark = database.get_random_bookmark(restrictions=self.restrictions)
+        timeout = 100
+        # We'll try loop until we get a new bookmark that isn't the same as the current one
+        # Timeout incase I fuck anything up
+        while new_bookmark.get_attributes() == self.bookmark.get_attributes() and timeout > 0:
+            new_bookmark = database.get_random_bookmark(restrictions=self.restrictions)
+            timeout -= 1
+
+        if timeout == 0:
+            logging.info("Failed to get a unique random bookmark, which seems pretty unlikely")
+
+        self.bookmark = new_bookmark
 
     def open_bookmark(self):
         """Open the bookmark"""
-        webbrowser.open(self.bookmark[2])
+        webbrowser.open(self.bookmark.url)
 
     def render_bookmark(self, bookmark):
         """Draws the bookmark details"""

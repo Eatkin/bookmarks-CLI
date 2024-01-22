@@ -261,3 +261,7 @@ class Bookmark():
         except:
             logging.warning(f"Failed to extract domain from url: {self.url}")
             self.domain = "Unknown"
+
+    def get_attributes(self):
+        """Return a list of attributes"""
+        return [self.title, self.url, self.add_date_formatted, self.folder]

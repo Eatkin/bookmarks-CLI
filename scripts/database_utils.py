@@ -1,5 +1,6 @@
 import sqlite3
 import os
+import logging
 from scripts.components import Bookmark
 
 class Database():
@@ -67,10 +68,24 @@ class Database():
         self.cursor.execute(query)
         return self.cursor.fetchall()
 
-    def get_random_bookmark(self):
+    def get_random_bookmark(self, restrictions=None):
         """Return a random bookmark"""
         query = """
         SELECT * FROM bookmarks
+        """
+
+        # Pass in restrictions here, should be a where statement or list of where statements
+        if restrictions is not None:
+            if type(restrictions) is str:
+                query += "WHERE " + restrictions
+            else:
+                query += "WHERE "
+                for restriction in restrictions:
+                    query += restriction + ' AND '
+                # Remove the last AND
+                query = query[:-5]
+
+        query += """
         ORDER BY RANDOM()
         LIMIT 1
         """
