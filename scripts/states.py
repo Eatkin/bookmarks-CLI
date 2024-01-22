@@ -13,13 +13,12 @@ from scripts.colours import Colours
 
 # TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
 # TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
-# TODO: Probably should allow escape to go back to the previous state
-# TODO: ^ We can basically see if there's a back option in the menu and if so activate the associated function
 # TODO: Reorder the main menu cause we probably want to view the database more than we want to build it
 # TODO: Randomise in the bookmark viewer randomises ALL but should maybe have restrictions
 # TODO: ^ Add a 'restriction' option to the menu which will allow us to add a line to the SQL query used to get the random bookmark
 # TODO: Should be able to pick random category
-# TODO: Update database updating to only add records that don't already exist so we can update and not have to reprocess everything
+
+# TODO: Advanced navigation: menu wrapping, escape to go back (invoke the menu's back function), page up/page down, home/end, etc
 
 # Some semantical sugar
 state_history = []
@@ -254,7 +253,6 @@ class StateBookmarkExplorerByCategory(State):
 
         self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Category")
 
-
 # WIP
 class StateBookmarkExplorerByYear(State):
     """Display every year as a menu item"""
@@ -317,6 +315,9 @@ class StateSelectBookmarksFile(State):
                     if file.endswith('.html'):
                         self.html_files[file] = os.path.join(path, file)
 
+        # Sort the dictionary by key, reverse=True for descending order
+        # Should show most recent bookmarks first by Chrome's naming convention
+        self.html_files = dict(sorted(self.html_files.items(), reverse=True))
 
         menu_options = list(self.html_files.keys()) + ["Delete database", "Exit"]
         menu_functions = [MenuFunction(FunctionType.FUNCTION, self.select_file, [file]) for file in list(self.html_files.keys())]
