@@ -17,10 +17,9 @@ from scripts.colours import Colours
 # TODO: ^ We can basically see if there's a back option in the menu and if so activate the associated function
 # TODO: Reorder the main menu cause we probably want to view the database more than we want to build it
 # TODO: Randomise in the bookmark viewer randomises ALL but should maybe have restrictions
+# TODO: ^ Add a 'restriction' option to the menu which will allow us to add a line to the SQL query used to get the random bookmark
 # TODO: Should be able to pick random category
-# TODO: Bookmarks list state should have a heading with the category name or whatever
-# TODO: We already have a title for the menus so we can just use that and render differently in list style
-# TODO: Make list style menu centre in available space (horizontally)
+# TODO: Update database updating to only add records that don't already exist so we can update and not have to reprocess everything
 
 # Some semantical sugar
 state_history = []
@@ -124,7 +123,6 @@ class State():
         # Draw menu if it exists
         if self.menu:
             self.menu.render()
-        pass
 
     def advance_state(self, state, args=[]):
         """Advance to a new state"""
@@ -151,10 +149,10 @@ class StateSetup(State):
         logging.info("Initialising StateSetup")
         super().__init__(stdscr)
         # Create a blank menu for now
-        menu_items = ["Build Bookmarks Database", "Load Bookmarks Database", "Exit"]
+        menu_items = ["Load Bookmarks Database", "Build Bookmarks Database", "Exit"]
         menu_functions = [
-            MenuFunction(FunctionType.ADVANCE_STATE, state=StateSelectBookmarksFile),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerIndex),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateSelectBookmarksFile),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit)
             ]
         self.menu = Menu(self.stdscr, menu_items, menu_functions, "Google Chrome Bookmarks Explorer")
@@ -275,7 +273,6 @@ class StateBookmarkExplorerByMonth(State):
         # Here we will get all the bookmarks in the month and year via query to the database
         # Then create a list menu from it
 
-# WIP
 class StateBookmarksList(State):
     """Display a list of bookmarks that are passed to the state"""
     def __init__(self, stdscr, bookmarks, menu_title="Remember to set a title"):
@@ -302,7 +299,6 @@ class StateBookmarksList(State):
         """Reroll the random bookmark"""
         self.menu.functions[0].args[0] = self.random_bookmark()
 
-
 class StateSelectBookmarksFile(State):
     """State for selecting a bookmarks .html file
     Used for creating a new database"""
@@ -322,12 +318,30 @@ class StateSelectBookmarksFile(State):
                         self.html_files[file] = os.path.join(path, file)
 
 
-        menu_options = list(self.html_files.keys()) + ["Exit"]
-        menu_functions = [MenuFunction(FunctionType.FUNCTION, self.select_file, [file]) for file in list(self.html_files.keys())] + [MenuFunction(FunctionType.REGRESS_STATE)]
+        menu_options = list(self.html_files.keys()) + ["Delete database", "Exit"]
+        menu_functions = [MenuFunction(FunctionType.FUNCTION, self.select_file, [file]) for file in list(self.html_files.keys())]
+        menu_functions += [MenuFunction(FunctionType.FUNCTION, self.delete_database), MenuFunction(FunctionType.REGRESS_STATE)]
 
         # Create a list style menu
-        self.menu = MenuList(self.stdscr, menu_options, menu_functions)
+        self.menu = MenuList(self.stdscr, menu_options, menu_functions, "Select Bookmarks File")
         logging.info("StateSelectBookmarksFile initialised")
+
+        self.deleted_database_timer_max = 2
+        self.deleted_database_timer = 0
+        self.t = datetime.now()
+
+    def delete_database(self):
+        """Delete the database"""
+        if self.database_exists():
+            os.remove(os.path.join(os.getcwd(), 'bookmarks.db'))
+
+        self.deleted_database_timer = self.deleted_database_timer_max
+        self.t = datetime.now()
+
+    def draw_deleted_message(self):
+        """Draw a message to the screen when the database is deleted"""
+        yy, xx = self.stdscr.getmaxyx()
+        self.stdscr.addstr(int(yy/2), int(xx/2)-int(len("Database deleted successfully")/2), "Database deleted successfully", self.colours.get_colour('white_on_red') | curses.A_ITALIC)
 
     def select_file(self, file):
         """Create a database from the selected file"""
@@ -343,20 +357,29 @@ class StateSelectBookmarksFile(State):
         self.update_function_args = [state_previous.on_db_update]
 
     def update(self):
+        # Count down the timer if necessary
+        if self.deleted_database_timer > 0:
+            dt = datetime.now() - self.t
+            self.deleted_database_timer -= dt.total_seconds()
+            self.t = datetime.now()
+            if self.deleted_database_timer <= 0:
+                self.deleted_database_timer = 0
+            return None
+
         return super().update()
 
     def render(self):
         """Render the state"""
         if self.html_files == {}:
             self.stdscr.addstr("No .html files found in current directory", self.colours.get_colour('red_on_black'))
-        else:
-            if self.database_exists():
-                self.stdscr.addstr("Database already exists, it will be overwritten if you build a new database\n", self.colours.get_colour('red_on_black'))
-            self.stdscr.addstr("Select a bookmarks file to build the database from", self.colours.get_colour('white_on_black'))
-
-        self.stdscr.addstr("\n")
+        elif self.database_exists():
+                self.stdscr.addstr("Database already exists, new bookmarks will be added to existing database\n", self.colours.get_colour('red_on_black'))
 
         super().render()
+
+        if self.deleted_database_timer > 0:
+            self.draw_deleted_message()
+            self.stdscr.addstr("\n")
 
     def create_database(self, html_filepath, db_path='bookmarks.db'):
         """Create a new database"""

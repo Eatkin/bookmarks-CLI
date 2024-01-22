@@ -29,15 +29,9 @@ class Database():
 
     def export_bookmarks(self, bookmarks):
         """Exports the bookmarks to a sql file"""
-        db = sqlite3.connect(self.db_path)
-        cursor = db.cursor()
-
-        # Delete the table first because we don't want duplicates
-        query = """
-        DROP TABLE IF EXISTS bookmarks
-        """
-
-        cursor.execute(query)
+        # Open database if not already open
+        if not self.database_is_connected():
+            self.open_database()
 
         # Create the table if it doesn't exist
         query = """
@@ -46,19 +40,23 @@ class Database():
             title TEXT,
             url TEXT,
             add_date TEXT,
-            folder TEXT
+            folder TEXT,
+            CONSTRAINT unique_bookmark UNIQUE (title, url, add_date, folder)
         )
         """
-        cursor.execute(query)
+        self.cursor.execute(query)
 
-        # Insert the bookmarks
+        # Insert UNIQUE bookmarks using window title, url, and add_date
+        # The ids are autoincremented so won't necessarily be unique
         query = """
-        INSERT INTO bookmarks (title, url, add_date, folder)
+        INSERT OR IGNORE INTO bookmarks (title, url, add_date, folder)
         VALUES (?, ?, ?, ?)
         """
-        cursor.executemany(query, bookmarks)
-        db.commit()
-        db.close()
+        self.cursor.executemany(query, bookmarks)
+
+        # Commit changes and close database
+        self.db.commit()
+        self.close_database()
 
     def get_categories(self):
         query = """

@@ -19,7 +19,8 @@ class Menu():
         self.selected = 0
 
         # Use items to determine the width and height of the menu
-        self.width = max([len(item) for item in self.items + [self.menu_title]]) + 4
+
+        self.width = max([len(item) for item in self.items + [self.menu_title if self.menu_title else ""]]) + 4
         self.height = len(self.items) + 4
         self.h_padding = 4
         self.v_padding = 1
@@ -158,20 +159,23 @@ class MenuList(Menu):
         # Get terminal size
         t_height, t_width = self.stdscr.getmaxyx()
 
-        # First draw menu title
-        # Get the y pos
-        y, x = self.stdscr.getyx()
-        # Draw menu title in italic yellow
-        col = self.colours.get_colour('yellow_on_black')
-        xoffset = round((t_width - len(self.menu_title)) * 0.5)
-        self.stdscr.addstr(" " * xoffset + self.menu_title, col | curses.A_ITALIC)
-        self.stdscr.addstr("\n")
-        # Draw a line under the title
-        self.stdscr.addstr("." * t_width, col)
-        dy = self.stdscr.getyx()[0] - y
+        dy = 0
 
-        # Update menu title height
-        self.menu_title_height = dy
+        # First draw menu title
+        if self.menu_title is not None:
+            # Get the y pos
+            y, x = self.stdscr.getyx()
+            # Draw menu title in italic yellow
+            col = self.colours.get_colour('yellow_on_black')
+            xoffset = round((t_width - len(self.menu_title)) * 0.5)
+            self.stdscr.addstr(" " * xoffset + self.menu_title, col | curses.A_ITALIC)
+            self.stdscr.addstr("\n")
+            # Draw a line under the title
+            self.stdscr.addstr("." * t_width, col)
+            dy = self.stdscr.getyx()[0] - y
+
+            # Update menu title height
+            self.menu_title_height = dy
 
         # Call the scroll function to adjust the scroll if needed
         self.offset, self.selected = self.scroll(self.offset, self.selected, 0, len(self.items) - 1)
