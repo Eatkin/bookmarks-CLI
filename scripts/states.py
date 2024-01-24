@@ -17,6 +17,8 @@ from scripts.colours import Colours
 # TODO: Advanced navigation: menu wrapping, escape to go back (invoke the menu's back function), page up/page down, home/end, etc
 # TODO: ALSO use a while loop to get input so w2e can process 'queued' inputs instead of having to wait for stdscr refresh
 
+# TODO: Implement the search function
+
 # Some semantical sugar
 state_history = []
 

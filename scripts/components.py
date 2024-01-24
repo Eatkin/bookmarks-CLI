@@ -56,10 +56,13 @@ class Menu():
         # Update the selected item
         self.selected += vinput
 
+
         # scrolling behaviour
-        if self.scroll_behaviour == 'wrap':
-            self.selected = self.wrap(self.selected, 0, len(self.items) - 1)
-        elif self.scroll_behaviour == 'scroll':
+        # First we wrap from first to last item and vice versa if out of bounds
+        self.selected = self.wrap(self.selected, 0, len(self.items) - 1)
+
+        # Then we adjust the offset of the menu if we are a scroll type menu (a list style menu)
+        if self.scroll_behaviour == 'scroll':
             self.offset, self.selected = self.scroll(self.offset, self.selected, 0, len(self.items) - 1)
 
         # Check for enter key
@@ -68,15 +71,6 @@ class Menu():
             return self.functions[self.selected]
 
         return None
-
-    def clamp(self, n, min, max):
-        """Clamp a number between min and max"""
-        if n < min:
-            return min
-        elif n > max:
-            return max
-        else:
-            return n
 
     def wrap(self, selection, min, max):
         """Wrap a number between min and max"""
@@ -89,9 +83,6 @@ class Menu():
 
     def scroll(self, scroll, selection, min, max):
         """Scroll a number between min and max"""
-        # Clamp selection
-        selection = self.clamp(selection, min, max)
-
         # Adjust scroll if needed
         height, _ = self.stdscr.getmaxyx()
 
