@@ -1,9 +1,11 @@
 import curses
+import curses.ascii
 import logging
-from scripts.colours import Colours
-from math import floor, ceil
+from math import floor
 from datetime import datetime
 import re
+from scripts.colours import Colours
+from scripts.math_utils import clamp
 
 # A regex pattern for extracting the domain from a url
 url_pattern = re.compile(r'(?:\w+)?(?:\://)?(?:w{3}\.)?([\w\d\._-]+)/?.*$')
@@ -44,6 +46,9 @@ class Menu():
 
     def update(self):
         """Get keyboard input to navigate the menu,"""
+        # Get terminal size
+        t_height, t_width = self.stdscr.getmaxyx()
+
         # Clear inputs
         self.stdscr.nodelay(True)
         key = self.stdscr.getch()
@@ -52,6 +57,31 @@ class Menu():
             vinput -= 1
         if key == curses.KEY_DOWN:
             vinput += 1
+
+        # Pg up and pg down - move by page_skip
+        page_skip = 10
+        if key == curses.KEY_PPAGE:
+            vinput -= page_skip
+            # Make sure we don't go out of bounds
+            vinput = clamp(vinput, -self.selected, len(self.items) - 1 - self.selected)
+        if key == curses.KEY_NPAGE:
+            vinput += page_skip
+            # Make sure we don't go out of bounds
+            vinput = clamp(vinput, -self.selected, len(self.items) - 1 - self.selected)
+
+        # Home and end - move to start and end
+        if key == curses.KEY_HOME:
+            vinput = -self.selected
+        if key == curses.KEY_END:
+            vinput = len(self.items) - 1 - self.selected
+
+        # Escape to invoke the "Back" function if one exists
+        # This is slow for some reason
+        if key == curses.ascii.ESC:
+            if "Back" in self.items:
+                # Find the index of the back button
+                back_index = self.items.index("Back")
+                return self.functions[back_index]
 
         # Update the selected item
         self.selected += vinput

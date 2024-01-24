@@ -265,7 +265,6 @@ class StateBookmarkExplorerByCategory(State):
 
         self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Category")
 
-# WIP
 class StateBookmarkExplorerByYear(State):
     """Display every year as a menu item"""
     def __init__(self, stdscr):
@@ -285,7 +284,6 @@ class StateBookmarkExplorerByYear(State):
         # Create the list menu
         self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Year")
 
-# WIP
 class StateBookmarkExplorerByMonth(State):
     """Display all months within a year as a menu item"""
     def __init__(self, stdscr, year):
@@ -308,7 +306,6 @@ class StateBookmarkExplorerByMonth(State):
 
         # Create the menu
         self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Month")
-
 
 class StateBookmarksList(State):
     """Display a list of bookmarks that are passed to the state"""
@@ -363,10 +360,13 @@ class StateSelectBookmarksFile(State):
         # Get a list of all .html files in the current directory
         # Also crawl subdirectories
         self.html_files = {}
-        for path, dir, files in os.walk('.'):
+        logging.info("Walking current directory")
+        logging.info(f"Current directory: {os.getcwd()}")
+        for path, dir, files in os.walk(os.getcwd()):
             # Save the filename and path to the dictionary
-            if len(files) == 0:
+            if len(files) != 0:
                 for file in files:
+                    logging.info(f"Found file: {file}")
                     if file.endswith('.html'):
                         self.html_files[file] = os.path.join(path, file)
 
@@ -427,7 +427,7 @@ class StateSelectBookmarksFile(State):
     def render(self):
         """Render the state"""
         if self.html_files == {}:
-            self.stdscr.addstr("No .html files found in current directory", self.colours.get_colour('red_on_black'))
+            self.stdscr.addstr("No .html files found in current directory\n", self.colours.get_colour('red_on_black'))
         elif self.database_exists():
                 self.stdscr.addstr("Database already exists, new bookmarks will be added to existing database\n", self.colours.get_colour('red_on_black'))
 

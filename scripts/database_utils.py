@@ -138,12 +138,12 @@ class Database():
 
 
     def get_bookmarks_by_year_month(self, year, month):
-        """Returns all bookmarks in a year"""
+        """Returns all bookmarks in a year - most recent first"""
         query = """
         SELECT * FROM bookmarks
         WHERE strftime('%Y', add_date) = ?
         AND strftime('%m', add_date) = ?
-        ORDER BY title ASC
+        ORDER BY strftime(add_date) DESC
         """
 
         self.cursor.execute(query, (year,month))
