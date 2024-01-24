@@ -85,6 +85,7 @@ class Database():
                 # Remove the last AND
                 query = query[:-5]
 
+
         query += """
         ORDER BY RANDOM()
         LIMIT 1
@@ -102,4 +103,48 @@ class Database():
         """
 
         self.cursor.execute(query, (category,))
+        return [Bookmark(record) for record in self.cursor.fetchall()]
+
+    def get_all_bookmarks(self):
+        """Returns all bookmarks"""
+        query = """
+        SELECT * FROM bookmarks
+        ORDER BY title ASC
+        """
+
+        self.cursor.execute(query)
+        return [Bookmark(record) for record in self.cursor.fetchall()]
+
+    def get_distinct_years(self):
+        """Returns a list of distinct years"""
+        query = """
+        SELECT DISTINCT strftime('%Y', add_date) FROM bookmarks
+        ORDER BY strftime('%Y', add_date) DESC
+        """
+
+        self.cursor.execute(query)
+        return [year[0] for year in self.cursor.fetchall()]
+
+    def get_distinct_months(self, year):
+        """Returns a list of distinct months for a year"""
+        query = """
+        SELECT DISTINCT strftime('%m', add_date) FROM bookmarks
+        WHERE strftime('%Y', add_date) = ?
+        ORDER BY strftime('%m', add_date) ASC
+        """
+
+        self.cursor.execute(query, (year,))
+        return [month[0] for month in self.cursor.fetchall()]
+
+
+    def get_bookmarks_by_year_month(self, year, month):
+        """Returns all bookmarks in a year"""
+        query = """
+        SELECT * FROM bookmarks
+        WHERE strftime('%Y', add_date) = ?
+        AND strftime('%m', add_date) = ?
+        ORDER BY title ASC
+        """
+
+        self.cursor.execute(query, (year,month))
         return [Bookmark(record) for record in self.cursor.fetchall()]

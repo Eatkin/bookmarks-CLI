@@ -13,17 +13,29 @@ from scripts.colours import Colours
 
 # TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
 # TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
-# TODO: Randomise in the bookmark viewer randomises ALL but should maybe have restrictions
-# TODO: ^ Add a 'restriction' option to the menu which will allow us to add a line to the SQL query used to get the random bookmark
-# TODO: Should be able to pick random category
 
 # TODO: Advanced navigation: menu wrapping, escape to go back (invoke the menu's back function), page up/page down, home/end, etc
+# TODO: ALSO use a while loop to get input so w2e can process 'queued' inputs instead of having to wait for stdscr refresh
 
 # Some semantical sugar
 state_history = []
 
 # Globals
 database = None
+month_names = {
+    "01": "January",
+    "02": "February",
+    "03": "March",
+    "04": "April",
+    "05": "May",
+    "06": "June",
+    "07": "July",
+    "08": "August",
+    "09": "September",
+    "10": "October",
+    "11": "November",
+    "12": "December"
+}
 
 # Register cleanup function
 @atexit.register
@@ -97,7 +109,7 @@ class State():
                 try:
                     return self.perform_menu_function(callback)
                 except Exception as e:
-                    logging.warning(f"Menu function failed to perform: {callback}")
+                    logging.warning(f"Menu function failed to perform")
                     logging.warning(e)
                     exit(1)
 
@@ -225,7 +237,6 @@ class StateBookmarkExplorerIndex(State):
 
     def random_bookmark(self):
         """Select a random bookmark"""
-        logging.info("Getting random bookmark")
         result = database.get_random_bookmark()
 
         return result
@@ -257,18 +268,45 @@ class StateBookmarkExplorerByYear(State):
     """Display every year as a menu item"""
     def __init__(self, stdscr):
         super().__init__(stdscr)
-        # Here we will get all the years from the database
-        # Then create a list menu from it
+
+        # Get a list of all the years
+        years = database.get_distinct_years()
+        # Create a list menu from the years
+        menu_items = [year for year in years]
+        # Functions are just advance state to the bookmark list state
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerByMonth, args=[year]) for year in years]
+
+        # Append a back option
+        menu_items.append("Back")
+        menu_functions.append(MenuFunction(FunctionType.REGRESS_STATE))
+
+        # Create the list menu
+        self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Year")
 
 # WIP
 class StateBookmarkExplorerByMonth(State):
-    """Display all bookmarks in a certain month and year"""
-    def __init__(self, stdscr, year, month):
+    """Display all months within a year as a menu item"""
+    def __init__(self, stdscr, year):
+        global month_names
         super().__init__(stdscr)
         self.year = year
-        self.month = month
-        # Here we will get all the bookmarks in the month and year via query to the database
-        # Then create a list menu from it
+
+        # We can get all the distinct months in a year
+        months = database.get_distinct_months(year)
+
+        # Now make our menu
+        menu_items = [month_names[month] for month in months]
+
+        # Functions are just advance state to the bookmark list state
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarksList, args=[database.get_bookmarks_by_year_month(self.year, month), f"Bookmarks {month_names[month]} {year}", "month"]) for month in months]
+
+        # Append the back option
+        menu_items.append("Back")
+        menu_functions.append(MenuFunction(FunctionType.REGRESS_STATE))
+
+        # Create the menu
+        self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Month")
+
 
 class StateBookmarksList(State):
     """Display a list of bookmarks that are passed to the state"""
@@ -280,7 +318,15 @@ class StateBookmarksList(State):
         menu_items = ["Randomise"] + [bookmark.title for bookmark in self.bookmarks]
         category = self.bookmarks[0].folder
 
-        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark(), True, f"folder = \"{category}\""])]
+        # Set restrictions based on by attribute
+        restrictions = None
+        if by == "category":
+            restrictions = f"folder = \"{category}\""
+        elif by == "month":
+            # Get the year and month from the first bookmark (they should all be the same)
+            restrictions = f"strftime('%Y', add_date) = '{self.bookmarks[0].year}' AND strftime('%m', add_date) = '{self.bookmarks[0].month}'"
+
+        menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark(), True, restrictions])]
         # Disable randomisation for viewing a single bookmark
         menu_functions += [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[bookmark, False]) for bookmark in self.bookmarks]
 
@@ -317,7 +363,7 @@ class StateSelectBookmarksFile(State):
         self.html_files = {}
         for path, dir, files in os.walk('.'):
             # Save the filename and path to the dictionary
-            if len(files) > 0:
+            if len(files) == 0:
                 for file in files:
                     if file.endswith('.html'):
                         self.html_files[file] = os.path.join(path, file)

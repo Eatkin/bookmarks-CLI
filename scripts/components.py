@@ -262,6 +262,10 @@ class Bookmark():
             logging.warning(f"Failed to extract domain from url: {self.url}")
             self.domain = "Unknown"
 
+        # We should add a year and month attribute for filtering
+        self.year = self.add_date_formatted.split("/")[2]
+        self.month = self.add_date_formatted.split("/")[1]
+
     def get_attributes(self):
         """Return a list of attributes"""
         return [self.title, self.url, self.add_date_formatted, self.folder]
