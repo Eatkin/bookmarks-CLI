@@ -29,7 +29,7 @@ class Database():
         return self.db is not None
 
     def export_bookmarks(self, bookmarks):
-        """Exports the bookmarks to a sql file"""
+        """Creates the primary table containing bookmarks"""
         # Open database if not already open
         if not self.database_is_connected():
             self.open_database()
@@ -58,6 +58,80 @@ class Database():
         # Commit changes and close database
         self.db.commit()
         self.close_database()
+
+    def create_description_table(self):
+        """Creates the description table"""
+        # Open database if not already open
+        if not self.database_is_connected():
+            self.open_database()
+
+        # Create the table if it doesn't exist
+        query = """
+        CREATE TABLE IF NOT EXISTS descriptions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            description TEXT,
+            bookmark_id INTEGER,  -- Foreign key referencing bookmarks table
+            FOREIGN KEY (bookmark_id) REFERENCES bookmarks (id),
+            CONSTRAINT unique_description UNIQUE (title, description)
+        )
+        """
+        self.cursor.execute(query)
+
+        # Commit changes and close database
+        self.db.commit()
+        self.close_database()
+
+    def export_descriptions(self, descriptions):
+        """Exports the descriptions to the database"""
+        # Open database if not already open
+        if not self.database_is_connected():
+            self.open_database()
+
+        # Insert UNIQUE descriptions using title and description
+        query = """
+        INSERT OR IGNORE INTO descriptions (title, page_content)
+        VALUES (?, ?)
+        """
+        self.cursor.executemany(query, descriptions)
+
+        # Commit changes and close database
+        self.db.commit()
+        self.close_database()
+
+    def query(self, query):
+        """Generic method for arbitrary queries"""
+        # Open database if not already open
+        close = False
+        if not self.database_is_connected():
+            close = True
+            self.open_database()
+
+        self.cursor.execute(query)
+        self.db.commit()
+
+        # Close database if it was closed before
+        if close:
+            self.close_database()
+
+    def insert_page_content(self, page_content_list):
+        """Inserts a list of descriptions into the database"""
+        # Open database if not already open
+        close = False
+        if not self.database_is_connected():
+            self.open_database()
+            close = True
+
+        # Insert UNIQUE descriptions using title and description
+        query = """
+        INSERT OR IGNORE INTO descriptions (bookmark_id, page_content)
+        VALUES (?, ?)
+        """
+        self.cursor.executemany(query, page_content_list)
+
+        # Commit changes and close database
+        self.db.commit()
+        if close:
+            self.close_database()
 
     def get_categories(self):
         query = """
@@ -114,6 +188,16 @@ class Database():
 
         self.cursor.execute(query)
         return [Bookmark(record) for record in self.cursor.fetchall()]
+
+    def get_non_null_descriptions(self):
+        """Returns a list of descriptions that are not null"""
+        query = """
+        SELECT * FROM descriptions
+        WHERE description IS NOT NULL
+        """
+
+        self.cursor.execute(query)
+        return self.cursor.fetchall()
 
     def get_distinct_years(self):
         """Returns a list of distinct years"""

@@ -14,10 +14,14 @@ from scripts.colours import Colours
 # TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
 # TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
 
-# TODO: Advanced navigation: menu wrapping, escape to go back (invoke the menu's back function), page up/page down, home/end, etc
-# TODO: ALSO use a while loop to get input so w2e can process 'queued' inputs instead of having to wait for stdscr refresh
-
 # TODO: Implement the search function
+
+# TODO: Database shit:
+# TODO: Build 'content' which will be done via webscraping and nlp to summarise
+# TODO: Build 'tags' which will be done via webscraping and nlp to get content
+# TODO: Build recommender engine using cosine similarity
+
+# TODO: I dunno setup an option so we can browse from Lynx or something
 
 # Some semantical sugar
 state_history = []
