@@ -43,17 +43,6 @@ def logging_init():
 
 logger_filepath = logging_init()
 
-# --------------------------------------------------------------------------------
-# THE PLAN:
-# Use curses for the interface
-# Upon viewing bookmarks we have options for:
-# - Random Bookmark
-# - View By Folder (option for view all, and random pick from folder also)
-# - Search (by title, url, folder)
-# - View by date added
-# - Explore by date (pick year, month, probably not day, not enough)
-# --------------------------------------------------------------------------------
-
 # Main loop
 def main():
     # Initialize curses

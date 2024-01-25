@@ -14,12 +14,18 @@ from scripts.colours import Colours
 # TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
 # TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
 
-# TODO: Implement the search function
+# TODO: Implement the search function (by title, url, folder, date added, etc)
+# TODO: Can add a menu with a number next to it to show results like categories (3)
+# TODO: Query the database for the search results and pass them to a new state
+
+# TODO: Setup page_content scraping in the build database state
+# TODO: We can go to another state because it might take a while and we should track progress
 
 # TODO: Database shit:
-# TODO: Build 'content' which will be done via webscraping and nlp to summarise
-# TODO: Build 'tags' which will be done via webscraping and nlp to get content
+# TODO: Build 'content' which will be done via webscraping and nltk to summarise
+# TODO: Build 'tags' which will be done via webscraping and nltk to get content
 # TODO: Build recommender engine using cosine similarity
+# TODO: Use a notebook to generate tags and summaries then implement here
 
 # TODO: I dunno setup an option so we can browse from Lynx or something
 
@@ -165,10 +171,11 @@ class StateSetup(State):
         logging.info("Initialising StateSetup")
         super().__init__(stdscr)
         # Create a blank menu for now
-        menu_items = ["Load Bookmarks Database", "Build Bookmarks Database", "Exit"]
+        menu_items = ["Load Bookmarks Database", "Build Bookmarks Database", "Generate Bookmark Descriptions and Tags", "Exit"]
         menu_functions = [
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerIndex),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateSelectBookmarksFile),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit)
             ]
         self.menu = Menu(self.stdscr, menu_items, menu_functions, "Google Chrome Bookmarks Explorer")
