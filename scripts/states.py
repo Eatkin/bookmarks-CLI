@@ -10,6 +10,7 @@ from scripts.database_utils import Database
 from scripts.chrome_bookmarks_parser import parse
 from scripts.components import Menu, MenuList, Bookmark
 from scripts.colours import Colours
+from scripts.scraping_utils import main as scrape_data
 
 # TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
 # TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
@@ -28,8 +29,12 @@ from scripts.colours import Colours
 # TODO: Use a notebook to generate tags and summaries then implement here
 # TODO: Okay this looks like it's done so we should now add an option for generating tags and descriptions
 # TODO: We'll add a state for this and it'll have a nice progress bar and shit like that, it'll be cool
+# TODO: The scraping utils does everything but we should do it one at a time so we can show a progress bar using a for loop
 
 # TODO: I dunno setup an option so we can browse from Lynx or something
+
+# BUG: Trying to explore bookmarks without a database crashes the program
+# BUG: Probably same thing happens trying to generate descriptions and tags
 
 # Some semantical sugar
 state_history = []
@@ -177,7 +182,7 @@ class StateSetup(State):
         menu_functions = [
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerIndex),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateSelectBookmarksFile),
-            MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateGenerateDescriptionsAndTags),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit)
             ]
         self.menu = Menu(self.stdscr, menu_items, menu_functions, "Google Chrome Bookmarks Explorer")
@@ -379,7 +384,6 @@ class StateSelectBookmarksFile(State):
             # Save the filename and path to the dictionary
             if len(files) != 0:
                 for file in files:
-                    logging.info(f"Found file: {file}")
                     if file.endswith('.html'):
                         self.html_files[file] = os.path.join(path, file)
 
@@ -466,6 +470,40 @@ class StateSelectBookmarksFile(State):
     def database_exists(self, db_path='bookmarks.db'):
         """Check if a database exists"""
         return os.path.isfile(os.path.join(os.getcwd(), db_path))
+
+class StateGenerateDescriptionsAndTags(State):
+    def __init__(self, stdscr):
+        """State to generate descriptions and tags for the database"""
+        super().__init__(stdscr)
+        # Render before we call the function
+        self.render()
+        # All this really does is call the scrape_data function
+        # That's basically it
+        # When it's finished we'll get to the update function and regress to the previous state
+        try:
+            scrape_data()
+            logging.info("Descriptions and tags generated successfully")
+        except Exception as e:
+            logging.warning("Failed to generate descriptions and tags")
+            logging.warning(e)
+
+    def update(self):
+        """Update the state"""
+        # Set the update function to regress to the previous state
+        self.update_function = self.regress_state
+        state_previous = state_history[-2]
+        # This will set the on_regress callback
+        self.update_function_args = [state_previous.on_db_update]
+
+        return super().update()
+
+    def render(self):
+        """Just draws some text"""
+        self.stdscr.addstr("Generating descriptions and tags for the database\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("This may take a while\n", self.colours.get_colour('red_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("Here is a picture of a cat\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("=^._.^= ∫\n", self.colours.get_colour('white_on_black') | curses.A_BOLD)
+        super().render()
 
 class StateBookmarkViewer(State):
     """View details of a single bookmark"""

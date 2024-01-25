@@ -28,13 +28,27 @@ class Database():
         """Returns true if the database is connected"""
         return self.db is not None
 
-    def export_bookmarks(self, bookmarks):
+    def create_tables(self):
+        """Creates the tables for the database"""
+        try:
+            self.create_bookmarks_table()
+        except Exception as e:
+            logging.error(f"Failed to create bookmarks table: {e}")
+        try:
+            self.create_description_table()
+        except Exception as e:
+            logging.error(f"Failed to create descriptions table: {e}")
+
+    def create_bookmarks_table(self):
         """Creates the primary table containing bookmarks"""
         # Open database if not already open
         if not self.database_is_connected():
             self.open_database()
 
+        #--------------------------------------------------------------------------------#
         # Create the table if it doesn't exist
+        # Schema: id (primary key), title, url, add_date, folder
+        #--------------------------------------------------------------------------------#
         query = """
         CREATE TABLE IF NOT EXISTS bookmarks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -46,14 +60,6 @@ class Database():
         )
         """
         self.cursor.execute(query)
-
-        # Insert UNIQUE bookmarks using window title, url, and add_date
-        # The ids are autoincremented so won't necessarily be unique
-        query = """
-        INSERT OR IGNORE INTO bookmarks (title, url, add_date, folder)
-        VALUES (?, ?, ?, ?)
-        """
-        self.cursor.executemany(query, bookmarks)
 
         # Commit changes and close database
         self.db.commit()
@@ -82,10 +88,31 @@ class Database():
             tags TEXT,
             bookmark_id INTEGER,  -- Foreign key referencing bookmarks table
             FOREIGN KEY (bookmark_id) REFERENCES bookmarks (id),
-            CONSTRAINT unique_description UNIQUE (title, description)
+            CONSTRAINT unique_description UNIQUE (bookmark_id)
         )
         """
         self.cursor.execute(query)
+
+        # Commit changes and close database
+        self.db.commit()
+        self.close_database()
+
+    def export_bookmarks(self, bookmarks):
+        """Creates the primary table containing bookmarks"""
+        # Setup tables
+        self.create_tables()
+
+        # Open database if not already open
+        if not self.database_is_connected():
+            self.open_database()
+
+        # Insert UNIQUE bookmarks using window title, url, and add_date
+        # The ids are autoincremented so won't necessarily be unique
+        query = """
+        INSERT OR IGNORE INTO bookmarks (title, url, add_date, folder)
+        VALUES (?, ?, ?, ?)
+        """
+        self.cursor.executemany(query, bookmarks)
 
         # Commit changes and close database
         self.db.commit()
@@ -109,7 +136,7 @@ class Database():
         self.db.commit()
         self.close_database()
 
-    def query(self, query):
+    def query(self, query, params=None):
         """Generic method for arbitrary queries"""
         # Open database if not already open
         close = False
@@ -117,12 +144,23 @@ class Database():
             close = True
             self.open_database()
 
-        self.cursor.execute(query)
+        if params is None:
+            self.cursor.execute(query)
+        else:
+            if len(params) == 1:
+                self.cursor.execute(query, params)
+            else:
+                self.cursor.executemany(query, params)
+
+        results = self.cursor.fetchall()
+
         self.db.commit()
 
         # Close database if it was closed before
         if close:
             self.close_database()
+
+        return results
 
     def get_categories(self):
         query = """
@@ -179,16 +217,6 @@ class Database():
 
         self.cursor.execute(query)
         return [Bookmark(record) for record in self.cursor.fetchall()]
-
-    def get_non_null_descriptions(self):
-        """Returns a list of descriptions that are not null"""
-        query = """
-        SELECT * FROM descriptions
-        WHERE description IS NOT NULL
-        """
-
-        self.cursor.execute(query)
-        return self.cursor.fetchall()
 
     def get_distinct_years(self):
         """Returns a list of distinct years"""

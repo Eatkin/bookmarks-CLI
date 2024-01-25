@@ -9,17 +9,34 @@ def get_null_description_bookmarks():
     # Create the database object
     db = Database()
 
+    # Get all bookmark IDs that aren't in the descriptions table
+    query = """
+    SELECT bookmarks.id
+    FROM bookmarks
+    LEFT JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
+    WHERE descriptions.bookmark_id IS NULL
+    """
+
+    results = db.query(query)
+
+    # Now insert these into the descriptions table
+    query = """
+    INSERT INTO descriptions (bookmark_id)
+    VALUES (?)
+    """
+    db.query(query, results)
+
     # Query the database to get all null descriptions joined with the bookmarks table
     # We want id and url
     query = """
     SELECT bookmarks.id, bookmarks.url
     FROM bookmarks
     JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-    WHERE descriptions.bookmark_id IS NULL
+    WHERE descriptions.content IS NULL
     """
 
     # Get the query results
-    results = db.cursor.execute(query).fetchall()
+    results = db.query(query)
 
     return results
 
@@ -42,11 +59,26 @@ def scrape_data(results):
             # Make the soup
             soup = BeautifulSoup(r.text, 'html.parser')
             content_dump = soup.text
-            relevant_content = parse_soup(soup)
-            description = get_decription(soup)
-            tags = get_tags(clean_text(relevant_content), ntags = 5)
-            # Format tags for database
-            tags = ','.join(tags)
+            try:
+                relevant_content = parse_soup(soup)
+            except Exception as e:
+                logging.error(f"Failed to parse soup for url: {url}")
+                continue
+            try:
+                description = get_description(soup)
+            except Exception as e:
+                logging.error(f"Failed to get description for url: {url}")
+                description = None
+            try:
+                cleaned_text = clean_text(relevant_content)
+                tags = get_tags(cleaned_text, n_tags = 5)
+                # Format tags for database
+                tags = ','.join(tags)
+                logging.info(f"Tags for url: {url} are: {tags}")
+            except Exception as e:
+                logging.error(f"Failed to get tags for url: {url}")
+                logging.info(f"Error: {e}")
+                tags = None
             description_rows.append((bookmark_id, content_dump, relevant_content, description, tags))
 
     return description_rows
@@ -61,8 +93,16 @@ def parse_soup(soup):
 
     tags = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li', 'ol', 'ul']
     # Find all the tags
-    tags = body.find_all(tags)
-    page_contents = ' '.join([tag.text for tag in tags])
+    tag_content = []
+    for tag in tags:
+        tag_content += [t.text for t in body.find_all(tag)]
+
+    # Fall back to using the entire soup if we can't find any tags
+    if not tag_content:
+        tag_content = [body.text]
+
+    # Join the tags
+    page_contents = ' '.join(tag_content)
 
     return page_contents if page_contents else None
 
@@ -74,7 +114,7 @@ def insert_data(page_contents):
     db = Database()
     db.insert_descriptions(page_contents)
 
-def get_decription(soup):
+def get_description(soup):
     """Gets the meta description from the page content"""
     meta = soup.find('meta', attrs={'name':'description'})
     if meta:
@@ -86,7 +126,10 @@ def main():
     """Main function for scraping the page contents and inserting relevant info into the database"""
     # Get the bookmarks with null descriptions
     results = get_null_description_bookmarks()
+    logging.info(f"Got {len(results)} bookmarks with null descriptions")
     # Scrape the page contents
     page_contents = scrape_data(results)
+    logging.info(f"Got {len(page_contents)} page contents")
     # Insert the page contents
     insert_data(page_contents)
+    logging.info("Inserted page contents into database")
