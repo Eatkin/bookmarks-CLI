@@ -65,11 +65,21 @@ class Database():
         if not self.database_is_connected():
             self.open_database()
 
+        #--------------------------------------------------------------------------------#
         # Create the table if it doesn't exist
+        # Schema: bookmark_id (foreign key), content, relevant_content, description, tags
+        # Content is the entire page content
+        # Relevant content is the content that is relevant to the page
+        # Description is the description of the page
+        # Tags are the tags for the page
+        #--------------------------------------------------------------------------------#
         query = """
         CREATE TABLE IF NOT EXISTS descriptions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
+            content TEXT,
+            relevant_content TEXT,
             description TEXT,
+            tags TEXT,
             bookmark_id INTEGER,  -- Foreign key referencing bookmarks table
             FOREIGN KEY (bookmark_id) REFERENCES bookmarks (id),
             CONSTRAINT unique_description UNIQUE (title, description)
@@ -81,16 +91,17 @@ class Database():
         self.db.commit()
         self.close_database()
 
-    def export_descriptions(self, descriptions):
-        """Exports the descriptions to the database"""
+    def insert_descriptions(self, descriptions):
+        """Exports the descriptions to the database
+        Input is list of tuples of the form (bookmark_id, content, relevant_content, description, tags)"""
         # Open database if not already open
         if not self.database_is_connected():
             self.open_database()
 
         # Insert UNIQUE descriptions using title and description
         query = """
-        INSERT OR IGNORE INTO descriptions (title, page_content)
-        VALUES (?, ?)
+        INSERT OR IGNORE INTO descriptions (bookmark_id, content, relevant_content, description, tags)
+        VALUES (?, ?, ?, ?, ?)
         """
         self.cursor.executemany(query, descriptions)
 
@@ -110,26 +121,6 @@ class Database():
         self.db.commit()
 
         # Close database if it was closed before
-        if close:
-            self.close_database()
-
-    def insert_page_content(self, page_content_list):
-        """Inserts a list of descriptions into the database"""
-        # Open database if not already open
-        close = False
-        if not self.database_is_connected():
-            self.open_database()
-            close = True
-
-        # Insert UNIQUE descriptions using title and description
-        query = """
-        INSERT OR IGNORE INTO descriptions (bookmark_id, page_content)
-        VALUES (?, ?)
-        """
-        self.cursor.executemany(query, page_content_list)
-
-        # Commit changes and close database
-        self.db.commit()
         if close:
             self.close_database()
 

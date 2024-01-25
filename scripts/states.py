@@ -26,6 +26,8 @@ from scripts.colours import Colours
 # TODO: Build 'tags' which will be done via webscraping and nltk to get content
 # TODO: Build recommender engine using cosine similarity
 # TODO: Use a notebook to generate tags and summaries then implement here
+# TODO: Okay this looks like it's done so we should now add an option for generating tags and descriptions
+# TODO: We'll add a state for this and it'll have a nice progress bar and shit like that, it'll be cool
 
 # TODO: I dunno setup an option so we can browse from Lynx or something
 
