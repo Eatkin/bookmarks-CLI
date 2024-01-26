@@ -127,7 +127,7 @@ class Database():
 
         # Insert UNIQUE descriptions using title and description
         query = """
-        INSERT OR IGNORE INTO descriptions (bookmark_id, content, relevant_content, description, tags)
+        INSERT OR REPLACE INTO descriptions (bookmark_id, content, relevant_content, description, tags)
         VALUES (?, ?, ?, ?, ?)
         """
         self.cursor.executemany(query, descriptions)

@@ -22,11 +22,7 @@ from scripts.scraping_utils import main as scrape_data
 # TODO: Setup page_content scraping in the build database state
 # TODO: We can go to another state because it might take a while and we should track progress
 
-# TODO: Database shit:
-# TODO: Build 'content' which will be done via webscraping and nltk to summarise
-# TODO: Build 'tags' which will be done via webscraping and nltk to get content
 # TODO: Build recommender engine using cosine similarity
-# TODO: Use a notebook to generate tags and summaries then implement here
 # TODO: Okay this looks like it's done so we should now add an option for generating tags and descriptions
 # TODO: We'll add a state for this and it'll have a nice progress bar and shit like that, it'll be cool
 # TODO: The scraping utils does everything but we should do it one at a time so we can show a progress bar using a for loop
@@ -35,6 +31,8 @@ from scripts.scraping_utils import main as scrape_data
 
 # BUG: Trying to explore bookmarks without a database crashes the program
 # BUG: Probably same thing happens trying to generate descriptions and tags
+
+# BUG: Main menu top border isn't big enough (probably cause of non-odd number of chars or something)
 
 # Some semantical sugar
 state_history = []

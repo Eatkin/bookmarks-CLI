@@ -140,8 +140,9 @@ class Menu():
             y = round((t_height - self.height) * 0.75)
 
         # Draw menu title (absolute fucking hell please god let me never have to touch this again)
-        title_padding = (self.width - len(self.menu_title) - 2) // 2  # Padding on both sides
-        title = f"+{'-' * title_padding}{self.menu_title}{'-' * title_padding}+"
+        title_padding_left = (self.width - len(self.menu_title) - 2) // 2
+        title_padding_right = self.width - len(self.menu_title) - title_padding_left - 2
+        title = f"+{'-' * title_padding_left}{self.menu_title}{'-' * title_padding_right}+"
         # Draw top vertical padding
         self.stdscr.addstr(y, x, title, col)
         for i in range(self.v_padding):

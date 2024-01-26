@@ -131,5 +131,8 @@ def main():
     page_contents = scrape_data(results)
     logging.info(f"Got {len(page_contents)} page contents")
     # Insert the page contents
-    insert_data(page_contents)
+    try:
+        insert_data(page_contents)
+    except Exception as e:
+        logging.error(f"Failed to insert page contents into database: {e}")
     logging.info("Inserted page contents into database")
