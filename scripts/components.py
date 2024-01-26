@@ -119,7 +119,7 @@ class Menu():
         if selection < scroll:
             scroll = selection
         elif selection >= scroll + height - 1 - self.menu_title_height:
-            scroll += 1
+            scroll = selection - height + 1 + self.menu_title_height
 
         return scroll, selection
 

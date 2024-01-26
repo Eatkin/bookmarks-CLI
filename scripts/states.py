@@ -13,8 +13,7 @@ from scripts.colours import Colours
 from scripts.scraping_utils import main as scrape_data
 from scripts.scraping_utils import get_null_description_bookmarks
 
-# BUG: Trying to load as list of bookmarks by tag now crshes with an out of bounds error for some reason lol I am a bad programmer and I should feel bad
-# Seriously it was working this morniung and now it's broken fml
+# BUG: Menu scrolls slowly when you pg down or end, but it scrolls up instantly
 
 # TODO: a by="tag" method for bookmark viewer state
 
@@ -343,13 +342,11 @@ class StateBookmarksList(State):
     """Display a list of bookmarks that are passed to the state"""
     def __init__(self, stdscr, bookmarks, menu_title="Remember to set a title", by="category"):
         super().__init__(stdscr)
-        logging.info("Initialising StateBookmarksList")
         # Bookmarks should be passed as a list of bookmark object
         self.bookmarks = bookmarks
         # Here we will create a list menu from the bookmarks - also include a randomise option at the top
         menu_items = ["Randomise"] + [bookmark.title for bookmark in self.bookmarks]
         category = self.bookmarks[0].folder
-        logging.info(f"Category: {category}")
 
         # Set restrictions based on by attribute
         restrictions = None
