@@ -1,4 +1,4 @@
-import requests
+from requests_html import HTMLSession
 import logging
 from bs4 import BeautifulSoup
 from scripts.database_utils import Database
@@ -40,48 +40,55 @@ def get_null_description_bookmarks():
 
     return results
 
-def scrape_data(results):
+def scrape_data(bookmark_info):
     """Scrapes the page contents and returns a list of tuples of the bookmark id and the page contents"""
     # Loop through the results and use the requests library to get the page contents
-    description_rows = []
+    session = HTMLSession()
 
-    for result in results:
-        # Get the id and url
-        bookmark_id, url = result
-        # Get the description
+    # Get the id and url
+    bookmark_id, url = bookmark_info
+    # Get the description
+    try:
+        r = session.get(url)
+        # Render for js content
+        r.html.render()
+    except:
+        logging.error(f"Failed to get url: {url}")
+        session.close()
+        return (bookmark_id, None, None, None, None)
+
+    if r.status_code == 200:
+        # Make the soup
+        soup = BeautifulSoup(r.text, 'html.parser')
+        content_dump = soup.text
         try:
-            r = requests.get(url)
-        except:
-            logging.error(f"Failed to get url: {url}")
-            continue
+            relevant_content = parse_soup(soup)
+        except Exception as e:
+            logging.error(f"Failed to parse soup for url: {url}")
+            session.close()
+            return (bookmark_id, None, None, None, None)
+        try:
+            description = get_description(soup)
+        except Exception as e:
+            logging.error(f"Failed to get description for url: {url}")
+            description = None
+        try:
+            cleaned_text = clean_text(relevant_content)
+            tags = get_tags(cleaned_text, n_tags = 3)
+            # Format tags for database
+            tags = ','.join(tags)
+            logging.info(f"Tags for url: {url} are: {tags}")
+        except Exception as e:
+            logging.error(f"Failed to get tags for url: {url}")
+            logging.info(f"Error: {e}")
+            tags = None
+    else:
+        session.close()
+        return (bookmark_id, None, None, None, None)
 
-        if r.status_code == 200:
-            # Make the soup
-            soup = BeautifulSoup(r.text, 'html.parser')
-            content_dump = soup.text
-            try:
-                relevant_content = parse_soup(soup)
-            except Exception as e:
-                logging.error(f"Failed to parse soup for url: {url}")
-                continue
-            try:
-                description = get_description(soup)
-            except Exception as e:
-                logging.error(f"Failed to get description for url: {url}")
-                description = None
-            try:
-                cleaned_text = clean_text(relevant_content)
-                tags = get_tags(cleaned_text, n_tags = 5)
-                # Format tags for database
-                tags = ','.join(tags)
-                logging.info(f"Tags for url: {url} are: {tags}")
-            except Exception as e:
-                logging.error(f"Failed to get tags for url: {url}")
-                logging.info(f"Error: {e}")
-                tags = None
-            description_rows.append((bookmark_id, content_dump, relevant_content, description, tags))
-
-    return description_rows
+    # Return tuple
+    session.close()
+    return (bookmark_id, content_dump, relevant_content, description, tags)
 
 def parse_soup(soup):
     """Parses the soup and returns the page contents"""
@@ -122,17 +129,27 @@ def get_description(soup):
     else:
         return None
 
-def main():
+def main(bookmark_info):
     """Main function for scraping the page contents and inserting relevant info into the database"""
     # Get the bookmarks with null descriptions
-    results = get_null_description_bookmarks()
-    logging.info(f"Got {len(results)} bookmarks with null descriptions")
+    # results = get_null_description_bookmarks()
+    # logging.info(f"Got {len(results)} bookmarks with null descriptions")
     # Scrape the page contents
-    page_contents = scrape_data(results)
-    logging.info(f"Got {len(page_contents)} page contents")
+    page_contents = scrape_data(bookmark_info)
+
+    # Check if the second value of the tuple is None
+    if page_contents[1] is None:
+        logging.info(f"Failed to scrape url: {bookmark_info[1]}")
+        return False
+
+    # Since we're doing 1 at a time put it in a list as that's how the insert_data method expects it
+    page_contents = [page_contents]
+
+
     # Insert the page contents
     try:
         insert_data(page_contents)
+        return True
     except Exception as e:
         logging.error(f"Failed to insert page contents into database: {e}")
-    logging.info("Inserted page contents into database")
+        return False

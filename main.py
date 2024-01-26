@@ -27,7 +27,7 @@ def curses_init():
 
     return stdscr
 
-def logging_init():
+def logging_init(level = logging.INFO):
     """Create a logger and return filepath"""
     logger_fname = 'log_{}.txt'.format(datetime.now().strftime('%d_%m_%Y:%H_%M_%S'))
     # Create the logs folder if it doesn't exist
@@ -37,7 +37,7 @@ def logging_init():
     logger_filepath = os.path.join('logs', logger_fname)
 
     # Create logger
-    logging.basicConfig(filename=logger_filepath, encoding="utf-8", level=logging.DEBUG, format='%(asctime)s:%(levelname)s:%(message)s')
+    logging.basicConfig(filename=logger_filepath, encoding="utf-8", level=level, format='%(asctime)s:%(levelname)s:%(message)s')
 
     return logger_filepath
 

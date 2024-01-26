@@ -11,12 +11,9 @@ from scripts.chrome_bookmarks_parser import parse
 from scripts.components import Menu, MenuList, Bookmark
 from scripts.colours import Colours
 from scripts.scraping_utils import main as scrape_data
+from scripts.scraping_utils import get_null_description_bookmarks
 
-# TODO: Switch requests library to requests-html for javascript support
-
-# TODO: Lookup by tags
-# TODO: Need a method for getting all bookmarks with a certain tag
-# TODO: Then a by="tag" method for bookmark viewer state
+# TODO: a by="tag" method for bookmark viewer state
 
 # TODO: Implement the search function (by title, url, folder, date added, etc)
 # TODO: Can add a menu with a number next to it to show results like categories (3)
@@ -493,34 +490,70 @@ class StateGenerateDescriptionsAndTags(State):
     def __init__(self, stdscr):
         """State to generate descriptions and tags for the database"""
         super().__init__(stdscr)
-        # Render before we call the function
-        self.render()
-        # All this really does is call the scrape_data function
-        # That's basically it
-        # When it's finished we'll get to the update function and regress to the previous state
+        # Get the list of bookmarks to process
+        self.bookmarks_to_process = get_null_description_bookmarks()
+        self.bookmarks_processed = []
+        self.bookmarks_total = len(self.bookmarks_to_process)
+        self.failures = 0
+
+    def update(self):
+        """Update the state"""
+        # We will go through the bookmarks to process and generate descriptions and tags
         try:
-            scrape_data()
-            logging.info("Descriptions and tags generated successfully")
+            # Pop the bookmark from the list and append it to the processed list
+            # Do this first otherwise we'll get stuck on the same bookmark if we crash
+            self.bookmarks_processed.append(self.bookmarks_to_process.pop(0))
+            # Then scrape the data
+            success = scrape_data(self.bookmarks_processed[-1])
+            if not success:
+                self.failures += 1
         except Exception as e:
             logging.warning("Failed to generate descriptions and tags")
             logging.warning(e)
 
-    def update(self):
-        """Update the state"""
-        # Set the update function to regress to the previous state
-        self.update_function = self.regress_state
-        state_previous = state_history[-2]
-        # This will set the on_regress callback
-        self.update_function_args = [state_previous.on_db_update]
+        # Go back to the previous state if we're done
+        if len(self.bookmarks_to_process) == 0:
+            # Set the update function to regress to the previous state
+            self.update_function = self.regress_state
+            state_previous = state_history[-2]
+            # This will set the on_regress callback
+            self.update_function_args = [state_previous.on_db_update]
 
         return super().update()
 
+    def draw_progress_bar(self, t_width, percentage_complete):
+        """Draw a progress bar in [] brackets with # representing progress"""
+        progress_count = int((t_width - 2) * int(percentage_complete[:-1]) / 100)
+        self.stdscr.addstr("[", self.colours.get_colour('green_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("#" * progress_count, self.colours.get_colour('blue_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(" " * (t_width - 2 - progress_count), self.colours.get_colour('green_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("]", self.colours.get_colour('green_on_black') | curses.A_BOLD)
+
+
     def render(self):
         """Just draws some text"""
+        _, t_width = self.stdscr.getmaxyx()
         self.stdscr.addstr("Generating descriptions and tags for the database\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
         self.stdscr.addstr("This may take a while\n", self.colours.get_colour('red_on_black') | curses.A_BOLD)
         self.stdscr.addstr("Here is a picture of a cat\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
         self.stdscr.addstr("=^._.^= ∫\n", self.colours.get_colour('white_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("\n")
+
+        # Now we can draw a progress bar
+        percentage_complete = int((self.bookmarks_total - len(self.bookmarks_to_process)) / self.bookmarks_total * 100)
+        percentage_complete = str(percentage_complete) + "%"
+        # Draw the percentage centred in green
+        padding_left = int(t_width/2)-int(len(percentage_complete)/2)
+        self.stdscr.addstr(" " * padding_left + percentage_complete, self.colours.get_colour('green_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("\n")
+        self.draw_progress_bar(t_width, percentage_complete)
+
+        # Display how many successes and failures we've had
+        self.stdscr.addstr("\n")
+        self.stdscr.addstr("\n")
+        self.stdscr.addstr(f"Successes: {self.bookmarks_total - len(self.bookmarks_to_process) - self.failures}\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
+        self.stdscr.addstr(f"Failures: {self.failures}\n", self.colours.get_colour('red_on_black') | curses.A_BOLD)
+
         super().render()
 
 class StateBookmarkViewer(State):
