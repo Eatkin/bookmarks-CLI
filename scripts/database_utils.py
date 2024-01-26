@@ -175,6 +175,7 @@ class Database():
         """Return a random bookmark"""
         query = """
         SELECT * FROM bookmarks
+        JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
         """
 
         # Pass in restrictions here, should be a where statement or list of where statements
@@ -196,6 +197,55 @@ class Database():
 
         self.cursor.execute(query)
         return Bookmark(self.cursor.fetchone())
+
+    def get_description(self, bookmark_id):
+        """Returns the description for a bookmark"""
+        query = """
+        SELECT description FROM descriptions
+        WHERE bookmark_id = ?
+        """
+
+        self.cursor.execute(query, (bookmark_id,))
+        return self.cursor.fetchone()[0]
+
+    def get_tags(self, bookmark_id):
+        """Returns the tags for a bookmark"""
+        query = """
+        SELECT tags FROM descriptions
+        WHERE bookmark_id = ?
+        """
+
+        self.cursor.execute(query, (bookmark_id,))
+        return self.cursor.fetchone()[0]
+
+    def get_all_tags(self):
+        """Returns all tags"""
+        query = """
+        SELECT DISTINCT tags FROM descriptions
+        WHERE tags IS NOT NULL
+        """
+
+        self.cursor.execute(query)
+
+        results = self.cursor.fetchall()
+
+        # Tags are separated by commas, so split them
+        # No duplicates
+        tags = []
+        for result in results:
+            tags.extend([t for t in result[0].split(',') if t not in tags])
+        return sorted(tags)
+
+    def get_bookmarks_by_tag(self, tag):
+        """Returns all bookmarks with a tag"""
+        query = """
+        SELECT * FROM bookmarks
+        JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
+        WHERE tags LIKE ?
+        """
+
+        self.cursor.execute(query, ('%,'+tag+',%',))
+        return [Bookmark(record) for record in self.cursor.fetchall()]
 
     def get_bookmarks_by_category(self, category):
         """Returns all bookmarks in a category"""

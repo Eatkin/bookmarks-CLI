@@ -12,8 +12,11 @@ from scripts.components import Menu, MenuList, Bookmark
 from scripts.colours import Colours
 from scripts.scraping_utils import main as scrape_data
 
-# TODO: Add a 'dyanmic' position option to the menu which will appear centred in AVAILABLE space
-# TODO: ^ Not useful for bookmark viewer cause we don't want it to jump around like seizure inducing
+# TODO: Switch requests library to requests-html for javascript support
+
+# TODO: Lookup by tags
+# TODO: Need a method for getting all bookmarks with a certain tag
+# TODO: Then a by="tag" method for bookmark viewer state
 
 # TODO: Implement the search function (by title, url, folder, date added, etc)
 # TODO: Can add a menu with a number next to it to show results like categories (3)
@@ -23,7 +26,7 @@ from scripts.scraping_utils import main as scrape_data
 # TODO: We can go to another state because it might take a while and we should track progress
 
 # TODO: Build recommender engine using cosine similarity
-# TODO: Okay this looks like it's done so we should now add an option for generating tags and descriptions
+
 # TODO: We'll add a state for this and it'll have a nice progress bar and shit like that, it'll be cool
 # TODO: The scraping utils does everything but we should do it one at a time so we can show a progress bar using a for loop
 
@@ -31,8 +34,6 @@ from scripts.scraping_utils import main as scrape_data
 
 # BUG: Trying to explore bookmarks without a database crashes the program
 # BUG: Probably same thing happens trying to generate descriptions and tags
-
-# BUG: Main menu top border isn't big enough (probably cause of non-odd number of chars or something)
 
 # Some semantical sugar
 state_history = []
@@ -242,11 +243,12 @@ class StateBookmarkExplorerIndex(State):
 
         # Create our menu which should display our options for viewing bookmarks
         # We'll start with a random and a back option
-        menu_items = ["Random Bookmark", "View By Category", "View By Date Added", "Search", "Back"]
+        menu_items = ["Random Bookmark", "View By Category", "View By Date Added", "View By Tag", "Search", "Back"]
         menu_functions = [
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark()]),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerByCategory),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerByYear),
+            MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkExplorerByTag),
             MenuFunction(FunctionType.ADVANCE_STATE, state=StateExit),
             MenuFunction(FunctionType.REGRESS_STATE)
             ]
@@ -280,6 +282,20 @@ class StateBookmarkExplorerByCategory(State):
         menu_functions.append(MenuFunction(FunctionType.REGRESS_STATE))
 
         self.menu = MenuList(self.stdscr, menu_items, menu_functions, "Bookmarks by Category")
+
+class StateBookmarkExplorerByTag(State):
+    """Display each tag as a menu item"""
+    def __init__(self, stdscr):
+        super().__init__(stdscr)
+        tags = database.get_all_tags()
+        menu_items = [tag for tag in tags]
+        meun_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarksList, args=[database.get_bookmarks_by_tag(tag), f"Bookmarks with tag {tag}", "tag"]) for tag in tags]
+
+        # Back option
+        menu_items.append("Back")
+        meun_functions.append(MenuFunction(FunctionType.REGRESS_STATE))
+
+        self.menu = MenuList(self.stdscr, menu_items, meun_functions, "Bookmarks by Tag")
 
 class StateBookmarkExplorerByYear(State):
     """Display every year as a menu item"""
@@ -340,6 +356,10 @@ class StateBookmarksList(State):
         elif by == "month":
             # Get the year and month from the first bookmark (they should all be the same)
             restrictions = f"strftime('%Y', add_date) = '{self.bookmarks[0].year}' AND strftime('%m', add_date) = '{self.bookmarks[0].month}'"
+        elif by == "tag":
+            # We can actually extract the tag from the menu title which is a bit stupid but whatever
+            tag = menu_title.split(' ')[-1]
+            restrictions = f"tags LIKE '%{tag}%'"
 
         menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark(), True, restrictions])]
         # Disable randomisation for viewing a single bookmark
@@ -532,6 +552,10 @@ class StateBookmarkViewer(State):
 
         self.menu = Menu(self.stdscr, menu_items, menu_functions, "Bookmark Viewer", position="bottom")
 
+        # Find tags and description
+        self.tags = database.get_tags(self.bookmark.id)
+        self.description = database.get_description(self.bookmark.id)
+
     def get_random_bookmark(self):
         """Get a new random bookmark"""
         new_bookmark = database.get_random_bookmark(restrictions=self.restrictions)
@@ -547,6 +571,10 @@ class StateBookmarkViewer(State):
 
         self.bookmark = new_bookmark
 
+        # Find tags and description
+        self.tags = database.get_tags(self.bookmark.id)
+        self.description = database.get_description(self.bookmark.id)
+
     def open_bookmark(self):
         """Open the bookmark"""
         webbrowser.open(self.bookmark.url)
@@ -556,10 +584,17 @@ class StateBookmarkViewer(State):
         # Draw the bookmark details
         self.stdscr.addstr(f"Category: {bookmark.folder}\n", self.colours.get_colour('green_on_black') | curses.A_BOLD)
         self.stdscr.addstr(f"Title: {bookmark.title}\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
+        # Description if we have one
+        if self.description:
+            self.stdscr.addstr(f"Description: {self.description}\n", self.colours.get_colour('magenta_on_black') | curses.A_BOLD)
         self.stdscr.addstr(f"Date added: {bookmark.add_date_formatted}\n", self.colours.get_colour('blue_on_black') | curses.A_BOLD)
         # This isn't THAT useful so I'll miss it out, also sometimes it's wrong or blank or unknown
         # self.stdscr.addstr(f"Domain: {bookmark.domain}\n", self.colours.get_colour('cyan_on_black') | curses.A_BOLD)
         self.stdscr.addstr(f"URL: {bookmark.url}\n", self.colours.get_colour('white_on_black') | curses.A_BOLD)
+
+        # Render tags
+        if self.tags:
+            self.stdscr.addstr(f"Tags: {', '.join(self.tags.split(','))}\n", self.colours.get_colour('cyan_on_black') | curses.A_BOLD)
 
 
 
