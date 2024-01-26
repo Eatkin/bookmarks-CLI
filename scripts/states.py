@@ -13,11 +13,9 @@ from scripts.colours import Colours
 from scripts.scraping_utils import main as scrape_data
 from scripts.scraping_utils import get_null_description_bookmarks
 
-# TODO: Implement the search function (by title, url, folder, date added, etc)
-# TODO: Can add a menu with a number next to it to show results like categories (3)
-# TODO: Query the database for the search results and pass them to a new state
-
+# OPTIONAL:
 # TODO: Build recommender engine using cosine similarity
+# TODO: Do I really want to do that lol
 
 # TODO: I dunno setup an option so we can browse from Lynx or something
 
