@@ -83,6 +83,8 @@ def scrape_data(bookmark_info):
             logging.info(f"Error: {e}")
             tags = None
     else:
+        logging.error(f"Failed to get url: {url}")
+        logging.info(f"Status code: {r.status_code}")
         session.close()
         return (bookmark_id, None, None, None, None)
 

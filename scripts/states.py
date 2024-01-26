@@ -13,6 +13,9 @@ from scripts.colours import Colours
 from scripts.scraping_utils import main as scrape_data
 from scripts.scraping_utils import get_null_description_bookmarks
 
+# BUG: Trying to load as list of bookmarks by tag now crshes with an out of bounds error for some reason lol I am a bad programmer and I should feel bad
+# Seriously it was working this morniung and now it's broken fml
+
 # TODO: a by="tag" method for bookmark viewer state
 
 # TODO: Implement the search function (by title, url, folder, date added, etc)
