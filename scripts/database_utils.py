@@ -242,9 +242,11 @@ class Database():
         SELECT * FROM bookmarks
         JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
         WHERE tags LIKE ?
+        OR tags LIKE ?
+        OR tags LIKE ?
         """
 
-        self.cursor.execute(query, ('%,'+tag+',%',))
+        self.cursor.execute(query, ('%,'+tag,'%,'+tag+',%',tag+',%'))
         return [Bookmark(record) for record in self.cursor.fetchall()]
 
     def get_bookmarks_by_category(self, category):

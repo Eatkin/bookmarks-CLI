@@ -343,11 +343,13 @@ class StateBookmarksList(State):
     """Display a list of bookmarks that are passed to the state"""
     def __init__(self, stdscr, bookmarks, menu_title="Remember to set a title", by="category"):
         super().__init__(stdscr)
+        logging.info("Initialising StateBookmarksList")
         # Bookmarks should be passed as a list of bookmark object
         self.bookmarks = bookmarks
         # Here we will create a list menu from the bookmarks - also include a randomise option at the top
         menu_items = ["Randomise"] + [bookmark.title for bookmark in self.bookmarks]
         category = self.bookmarks[0].folder
+        logging.info(f"Category: {category}")
 
         # Set restrictions based on by attribute
         restrictions = None
@@ -359,6 +361,7 @@ class StateBookmarksList(State):
         elif by == "tag":
             # We can actually extract the tag from the menu title which is a bit stupid but whatever
             tag = menu_title.split(' ')[-1]
+            logging.info(f"Tag: {tag}")
             restrictions = f"tags LIKE '%{tag}%'"
 
         menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark(), True, restrictions])]
