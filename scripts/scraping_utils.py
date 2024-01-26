@@ -73,7 +73,10 @@ def scrape_data(bookmark_info):
             logging.error(f"Failed to get description for url: {url}")
             description = None
         try:
-            cleaned_text = clean_text(relevant_content)
+            # join description and relevant content
+            if description:
+                tag_content = description + ' ' + relevant_content
+            cleaned_text = clean_text(tag_content)
             tags = get_tags(cleaned_text, n_tags = 3)
             # Format tags for database
             tags = ','.join(tags)

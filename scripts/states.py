@@ -13,26 +13,13 @@ from scripts.colours import Colours
 from scripts.scraping_utils import main as scrape_data
 from scripts.scraping_utils import get_null_description_bookmarks
 
-# BUG: Menu scrolls slowly when you pg down or end, but it scrolls up instantly
-
-# TODO: a by="tag" method for bookmark viewer state
-
 # TODO: Implement the search function (by title, url, folder, date added, etc)
 # TODO: Can add a menu with a number next to it to show results like categories (3)
 # TODO: Query the database for the search results and pass them to a new state
 
-# TODO: Setup page_content scraping in the build database state
-# TODO: We can go to another state because it might take a while and we should track progress
-
 # TODO: Build recommender engine using cosine similarity
 
-# TODO: We'll add a state for this and it'll have a nice progress bar and shit like that, it'll be cool
-# TODO: The scraping utils does everything but we should do it one at a time so we can show a progress bar using a for loop
-
 # TODO: I dunno setup an option so we can browse from Lynx or something
-
-# BUG: Trying to explore bookmarks without a database crashes the program
-# BUG: Probably same thing happens trying to generate descriptions and tags
 
 # Some semantical sugar
 state_history = []
@@ -107,8 +94,12 @@ class State():
         # These are one time functions that are called when we regress to a prior state
         # Useful for passing data between states
         if self.on_regress:
-            self.on_regress()
+            # This also allows us to change states on regress by providing a return value
+            func = self.on_regress
             self.on_regress = None
+            return_value = func()
+            if return_value:
+                return return_value
 
         if self.update_function:
             val = self.update_function(*self.update_function_args)
@@ -218,6 +209,7 @@ class StateSetup(State):
         self.timer = self.timer_max
         self.t = datetime.now()
         self.display_message = "Database updated successfully"
+        return None
 
 class StateBookmarkExplorerIndex(State):
     """This state will load the database and display a menu for exploring bookmarks
@@ -231,14 +223,19 @@ class StateBookmarkExplorerIndex(State):
 
         if not database:
             database = Database()
-            # Check if database exists
-            if not database.database_exists():
-                # Do something
-                pass
 
-            # Open the database if it isn't already open
-            if not database.database_is_connected():
-                database.open_database()
+        # Check if database exists
+        if not database.database_exists():
+            # We will go to the text display state and set our callback to regress to the previous state
+            # This will allow us to go back to the setup state
+            self.update_function = self.advance_state
+            self.update_function_args = [StateDisplayText, ["No database found, please build a database first", True]]
+            logging.info("No database found")
+            return None
+
+        # Open the database if it isn't already open
+        if not database.database_is_connected():
+            database.open_database()
 
         # Create our menu which should display our options for viewing bookmarks
         # We'll start with a random and a back option
@@ -359,7 +356,7 @@ class StateBookmarksList(State):
             # We can actually extract the tag from the menu title which is a bit stupid but whatever
             tag = menu_title.split(' ')[-1]
             logging.info(f"Tag: {tag}")
-            restrictions = f"tags LIKE '%{tag}%'"
+            restrictions = f"tags LIKE '%,{tag},%' OR tags LIKE '%,{tag}' OR tags LIKE '{tag},%'"
 
         menu_functions = [MenuFunction(FunctionType.ADVANCE_STATE, state=StateBookmarkViewer, args=[self.random_bookmark(), True, restrictions])]
         # Disable randomisation for viewing a single bookmark
@@ -493,34 +490,66 @@ class StateGenerateDescriptionsAndTags(State):
     def __init__(self, stdscr):
         """State to generate descriptions and tags for the database"""
         super().__init__(stdscr)
+
+        self.error = False
+
+        global database
+
+        if not database:
+            database = Database()
+
+        # Check if database exists
+        if not database.database_exists():
+            # We will go to the text display state and set our callback to regress to the previous state
+            # This will allow us to go back to the setup state
+            self.update_function = self.advance_state
+            self.update_function_args = [StateDisplayText, ["No database found, please build a database first", True]]
+            logging.info("No database found")
+            self.error = True
+            return None
+
+
         # Get the list of bookmarks to process
-        self.bookmarks_to_process = get_null_description_bookmarks()
-        self.bookmarks_processed = []
-        self.bookmarks_total = len(self.bookmarks_to_process)
-        self.failures = 0
+        try:
+            self.bookmarks_to_process = get_null_description_bookmarks()
+            self.bookmarks_processed = []
+            self.bookmarks_total = len(self.bookmarks_to_process)
+            self.failures = 0
+        except Exception as e:
+            logging.warning("Failed to get bookmarks to process")
+            logging.warning(e)
+            self.error = True
+            return None
+
+
 
     def update(self):
         """Update the state"""
-        # We will go through the bookmarks to process and generate descriptions and tags
-        try:
-            # Pop the bookmark from the list and append it to the processed list
-            # Do this first otherwise we'll get stuck on the same bookmark if we crash
-            self.bookmarks_processed.append(self.bookmarks_to_process.pop(0))
-            # Then scrape the data
-            success = scrape_data(self.bookmarks_processed[-1])
-            if not success:
-                self.failures += 1
-        except Exception as e:
-            logging.warning("Failed to generate descriptions and tags")
-            logging.warning(e)
+        if not self.error:
+            # We will go through the bookmarks to process and generate descriptions and tags
+            try:
+                # Pop the bookmark from the list and append it to the processed list
+                # Do this first otherwise we'll get stuck on the same bookmark if we crash
+                self.bookmarks_processed.append(self.bookmarks_to_process.pop(0))
+                # Then scrape the data
+                success = scrape_data(self.bookmarks_processed[-1])
+                if not success:
+                    self.failures += 1
+            except Exception as e:
+                logging.warning("Failed to generate descriptions and tags")
+                logging.warning(e)
 
-        # Go back to the previous state if we're done
-        if len(self.bookmarks_to_process) == 0:
-            # Set the update function to regress to the previous state
-            self.update_function = self.regress_state
-            state_previous = state_history[-2]
-            # This will set the on_regress callback
-            self.update_function_args = [state_previous.on_db_update]
+            try:
+                # Go back to the previous state if we're done
+                if len(self.bookmarks_to_process) == 0:
+                    # Set the update function to regress to the previous state
+                    self.update_function = self.regress_state
+                    state_previous = state_history[-2]
+                    # This will set the on_regress callback
+                    self.update_function_args = [state_previous.on_db_update]
+            except Exception as e:
+                logging.warning("Failed to update generate descriptions and tags state - maybe database is empty?")
+                logging.warning(e)
 
         return super().update()
 
@@ -535,6 +564,10 @@ class StateGenerateDescriptionsAndTags(State):
 
     def render(self):
         """Just draws some text"""
+        # We don't want to render if there's an error - this probably means DB is empty so we can't query it
+        if self.error:
+            return None
+
         _, t_width = self.stdscr.getmaxyx()
         self.stdscr.addstr("Generating descriptions and tags for the database\n", self.colours.get_colour('yellow_on_black') | curses.A_BOLD)
         self.stdscr.addstr("This may take a while\n", self.colours.get_colour('red_on_black') | curses.A_BOLD)
@@ -646,3 +679,23 @@ class StateExit(State):
     def __init__(self, stdscr):
         logging.info("Exiting via StateExit")
         exit(1)
+
+class StateDisplayText(State):
+    """Some generic state to show messages e.g. errors"""
+    def __init__(self, stdscr, text, error = True):
+        super().__init__(stdscr)
+        logging.info("Initialising StateDisplayText")
+        self.text = text
+
+        # Create a menu with a back option
+        menu_items = ["Back"]
+        menu_functions = [MenuFunction(FunctionType.REGRESS_STATE)]
+        if error:
+            menu_functions[0] = MenuFunction(FunctionType.REGRESS_STATE, args=[state_history[-2].regress_state])
+        self.menu = Menu(self.stdscr, menu_items, menu_functions, "Error")
+
+    def render(self):
+        """Render the state"""
+        self.stdscr.addstr(self.text, self.colours.get_colour('red_on_black') | curses.A_BOLD)
+        self.stdscr.addstr("\n")
+        super().render()

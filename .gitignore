@@ -3,3 +3,4 @@ logs/
 bookmarks.db
 .python-version
 *.pyc
+bookmarks.db

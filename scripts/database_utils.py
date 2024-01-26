@@ -20,9 +20,10 @@ class Database():
 
     def close_database(self):
         """Closes the database"""
-        self.db.close()
-        self.cursor = None
-        self.db = None
+        if self.db:
+            self.db.close()
+            self.cursor = None
+            self.db = None
 
     def database_is_connected(self):
         """Returns true if the database is connected"""
