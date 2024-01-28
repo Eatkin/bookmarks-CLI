@@ -89,7 +89,14 @@ def scrape_data(bookmark_info):
         logging.error(f"Failed to get url: {url}")
         logging.info(f"Status code: {r.status_code}")
         session.close()
-        return (bookmark_id, None, None, None, None)
+        # If status code is 404 then we can tag with 404
+        if r.status_code == 404:
+            tags = '404'
+            description = '404 Error'
+        else:
+            tags = None
+            description = None
+        return (bookmark_id, None, None, description, tags)
 
     # Return tuple
     session.close()
