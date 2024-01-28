@@ -1,5 +1,7 @@
 # Google Chrome Bookmarks Explorer CLI
 
+![Main Interface](https://github.com/Eatkin/bookmarks-CLI/blob/master/screens/main_interface.png?raw=true)
+
 ## Description
 
 This utility is a command line interface based on Curses to parse your exported Google Chrome bookmarks and give you a means of exploring them by category or selecting random bookmarks to look at.
@@ -55,3 +57,12 @@ Once you have built a database you may export it as a html file, ordered chronol
 * Add support for subfolders
 * Add cosine similarity recommender system to suggest similar bookmarks
 * Advanced export with some sort of basic css styling and filtering
+* Option to export bookmarks to a browsable HTML file instead of using the CLI
+
+## Screenshots
+
+![Bookmark Viewer](https://github.com/Eatkin/bookmarks-CLI/blob/master/screens/bookmark_viewer.png?raw=true)
+
+![Generating Tags and Descriptions](https://github.com/Eatkin/bookmarks-CLI/blob/master/screens/loading_tags.png?raw=true)
+
+![Viewing Bookmarks by Category](https://github.com/Eatkin/bookmarks-CLI/blob/master/screens/browse_by_category.png?raw=true)
