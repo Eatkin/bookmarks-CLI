@@ -40,6 +40,10 @@ Tags are based upon word frequency of scraped web pages and descriptions are bas
 * After building the bookmarks database you can use the "Load Bookmarks Database" option in the main menu to explore your bookmarks
 * (Optional) You can generate tags and descriptions for your bookmarks using the "Generate Bookmark Descriptions and Tags" option in the main menu. This can be very slow. But there is a picture of a cat.
 
+## HTML Export
+
+Once you have built a database you may export it as a html file, ordered chronologically. Run `python export_to_html.py` to build bookmarks.html. This is *extremely* basic and looks terrible. I will make it better eventually.
+
 ## Limitations
 
 * Only parses bookmarks from Google Chrome
@@ -50,4 +54,4 @@ Tags are based upon word frequency of scraped web pages and descriptions are bas
 * Add support for other browsers
 * Add support for subfolders
 * Add cosine similarity recommender system to suggest similar bookmarks
-* Option to export bookmarks to a browsable HTML file instead of using the CLI
+* Advanced export with some sort of basic css styling and filtering
