@@ -93,10 +93,14 @@ def scrape_data(bookmark_info):
         if r.status_code == 404:
             tags = '404'
             description = '404 Error'
+            # Also want content to be filled in because this is how we check if the bookmark has been scraped
+            # Avoids re-scraping an error page
+            content = '404 Error'
         else:
             tags = None
             description = None
-        return (bookmark_id, None, None, description, tags)
+            content = None
+        return (bookmark_id, content, None, description, tags)
 
     # Return tuple
     session.close()
