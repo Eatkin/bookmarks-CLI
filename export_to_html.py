@@ -21,8 +21,15 @@ html = """<html>
 </head>
 <body>
 <h1>Bookmarks</h1>
-<table>
 """
+
+# Get the current year cause we'll use it for subheadings
+current_year = results[0][3].split(' ')[0].split('-')[0]
+
+html += '<h2 id="{0}">{0}</h2>'.format(current_year)
+
+# Start the table
+html += "<table>"
 
 # Now we can iterate over the results and add them to the HTML
 # The results are returned as id, title, url, add_date, folder (category), description_id, content, relevant_content, description, tags
@@ -33,6 +40,12 @@ for row in results:
     category = row[4]
     description = row[8]
     tags = row[9]
+
+    # See if the year has changed
+    year = date.split(' ')[0].split('-')[0]
+    if year != current_year:
+        html += '</table><h2 id="{0}">{0}</h2><table>'.format(year)
+        current_year = year
 
     # Format tags
     if tags:
