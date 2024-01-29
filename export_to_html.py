@@ -1,4 +1,5 @@
 import scripts.database_utils as db
+import re
 
 # Instantiate the database
 database = db.Database()
@@ -16,6 +17,7 @@ results = database.query(query)
 html = """<html>
 <head>
 <title>Bookmarks</title>
+<link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
 <h1>Bookmarks</h1>
@@ -50,11 +52,11 @@ for row in results:
 
     # Now construct a table row
     html += """<tr>
-                <td><a href="{0}">{1}</a></td>
-                <td>{2}</td>
-                <td>{3}</td>
-                <td>{4}</td>
-                <td>{5}</td>
+                <td class="title"><a href="{0}">{1}</a></td>
+                <td class="date">{2}</td>
+                <td class="category">{3}</td>
+                <td class="description">{4}</td>
+                <td class="tags">{5}</td>
                 </tr>
                 """.format(url, title, date, category, description, tags)
 
@@ -62,6 +64,10 @@ for row in results:
 html += """</table>
 </body>
 </html>"""
+
+# Clean up any empty <td> tags
+pattern = re.compile('<td[a-z=" ]*></td>')
+html = re.sub(pattern, '', html)
 
 # Now we can write the HTML to a file
 with open('bookmarks.html', 'w') as f:

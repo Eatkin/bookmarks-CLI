@@ -1,0 +1,52 @@
+body {
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  text-align: center;
+}
+
+table {
+  width: 90%;
+  border-collapse: collapse;
+  margin: auto;
+  margin-top: 20px;
+}
+
+td {
+  border: 1px solid #dddddd;
+  text-align: left;
+  padding: 8px;
+  display: block;
+}
+
+tr {
+  display: block;
+  margin-bottom: 20px;
+  border-bottom: 2px solid #dddddd;
+}
+
+/* Classes */
+.title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.date {
+  font-size: 12px;
+  font-style: italic;
+}
+
+.category {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.description {
+  font-size: 14px;
+}
+
+.tags {
+  font-size: 12px;
+  font-style: italic;
+}
