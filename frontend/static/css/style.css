@@ -1,0 +1,45 @@
+body {
+  font-family: Arial, sans-serif;
+}
+
+h1,
+h2 {
+  text-align: center;
+}
+
+.bookmark {
+  width: 90%;
+  margin: auto;
+  margin-top: 20px;
+}
+
+.bookmark__title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+.bookmark__url {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.bookmark__date {
+  font-size: 12px;
+  font-style: italic;
+}
+
+.bookmark__category {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.bookmark__description {
+  font-size: 14px;
+}
+
+.bookmark__tags {
+  font-size: 12px;
+  font-style: italic;
+  margin-top: 10px;
+  /* Adjust as needed */
+}
