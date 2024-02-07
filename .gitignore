@@ -4,3 +4,6 @@ bookmarks.db
 .python-version
 *.pyc
 bookmarks.db
+
+# Unignore any html in the flask app
+!frontend/**/*.html
