@@ -41,5 +41,26 @@ h2 {
   font-size: 12px;
   font-style: italic;
   margin-top: 10px;
-  /* Adjust as needed */
+}
+
+/* Pagination */
+.pagination {
+  list-style: none;
+  padding: 0;
+  text-align: center;
+}
+
+.pagination li {
+  display: inline;
+  margin-right: 5px;
+}
+
+.pagination a {
+  padding: 5px 10px;
+  text-decoration: none;
+  color: #000;
+}
+
+.pagination a:hover {
+  background-color: #ddd;
 }

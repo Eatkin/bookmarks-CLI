@@ -1,0 +1,25 @@
+<nav class="pagination">
+  {% if page > 1 %}
+  <li><a href="?page={{ page - 1 }}">Previous</a></li>
+  {% endif %}
+
+  <!--Show two pages either side of current page then ... last page
+    E.g. 1 2 3 4 5 ... 19-->
+  {% if page > 3 %}
+  <li><a href="?page=1">1</a></li>
+  <li> ... </li>
+  {% endif %}
+  {% for p in range((page-2)|max(1), (page+2)|min(total_pages) + 1) %}
+  {% if p == page %}
+  <li><strong>{{ p }}</strong></li>
+  {% else %}
+  <li><a href="?page={{ p }}">{{ p }}</a></li>
+  {% endif %}
+  {% endfor %}
+  {% if page + 2 < total_pages %} <li> ... </li>
+    <li><a href="?page={{ total_pages }}">{{ total_pages }}</a></li>
+    {% endif %}
+
+    {% if page < total_pages %} <li><a href="?page={{ page + 1 }}">Next</a></li>
+      {% endif %}
+</nav>

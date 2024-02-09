@@ -1,0 +1,15 @@
+{% extends "html/base_template.html" %}
+
+{% block title %}Ed's Bookmark Page{% endblock %}
+
+{% block content %}
+
+<div class="categories">
+  <ul>
+    {% for category in categories %}
+    <li><a href="/categories/{{ category[0] }}">{{ category[0] }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}

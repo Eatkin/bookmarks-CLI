@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <title>{% block title %}{% endblock %}</title>
+</head>
+
+<body>
+  <header>
+    <h1>Ed's Bookmark Page</h1>
+    <nav class="menu-bar">
+      <ul>
+        <li><a href="{{ url_for('index') }}">Home</a></li>
+        <li><a href="{{ url_for('categories') }}">Browse by Category</a></li>
+        <li><a href="{{ url_for('tags') }}">Browse by Tag</a></li>
+        <li><a href="{{ url_for('dates') }}">Browse by Date</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main>
+    {% block content %}
+    {% endblock %}
+  </main>
+</body>
+
+</html>
