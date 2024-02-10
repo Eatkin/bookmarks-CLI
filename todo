@@ -1,0 +1,8 @@
+* NLP for tagging is not very good, this has some implications
+* * No longer need to store the entire page content in the database, just need the meta description
+* * I need to manually tag now, so can write a CL tool to do this which will prompt me for untagged pages
+
+* Once I'm happy with flask and everything I want to deploy it to a server and have it running 24/7
+* That means I'm going to start using Firestore for storing and retrieving the data
+
+* Once everything is on Firestore I need to write some tools to help me manage the data

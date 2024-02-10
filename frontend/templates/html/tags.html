@@ -1,0 +1,15 @@
+{% extends "html/base_template.html" %}
+
+{% block title %}Ed's Bookmark Page{% endblock %}
+
+{% block content %}
+
+<div class="tags">
+  <ul>
+    {% for tag in tags %}
+    <li><a href="/tags/{{ tag }}">{{ tag }}</a></li>
+    {% endfor %}
+  </ul>
+</div>
+
+{% endblock %}

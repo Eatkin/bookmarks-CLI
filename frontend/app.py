@@ -93,11 +93,32 @@ def show_category(category):
 # Routes by tag
 @app.route('/tags')
 def tags():
-    return 'This is the tags page'
+    query = """SELECT DISTINCT tags FROM bookmarks
+    JOIN descriptions ON bookmarks.id = descriptions.bookmark_id;"""
+
+    # The tags field contains 3 tags separated by commas so we need to create a set of all tags
+    tags = set()
+    for row in execute_query(query):
+        if row[0]:
+            tags.update(row[0].split(','))
+    print(tags)
+    tags = list(tags)
+    tags.sort()
+    return render_template('html/tags.html', tags=tags)
 
 @app.route('/tags/<tag>')
 def show_tag(tag):
-    return f'This is the page for {tag}'
+    # Query for all bookmarks with the tag ordered by date
+    query = f"""SELECT * FROM bookmarks
+    JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
+    WHERE tags LIKE '{tag}%,' OR tags LIKE ',%{tag}%,' OR tags LIKE ',%{tag}'
+    ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
+    tag_bookmarks = execute_query(query)
+
+    current_bookmarks, page, total_pages = get_bookmarks_page_details(tag_bookmarks)
+
+    # Render the template
+    return render_template('html/bookmarks.html', tag=tag, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
 
 # Routes by date
 @app.route('/dates')
