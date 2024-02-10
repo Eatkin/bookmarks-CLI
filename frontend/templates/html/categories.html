@@ -6,10 +6,14 @@
 
 <div class="categories">
   <ul>
-    {% for category in categories %}
-    <li><a href="/categories/{{ category[0] }}">{{ category[0] }}</a></li>
+    {% for c in categories %}
+    <li><a href=" {{ url_for('categories', category=c[0]) }}">{{ c[0] }}</a></li>
     {% endfor %}
   </ul>
 </div>
+
+{% if category %}
+{% include "html/bookmarks_template.html" %}
+{% endif %}
 
 {% endblock %}

@@ -1,25 +1,42 @@
 <nav class="pagination">
+  <!-- Absolutely hideous logic to construct query string including any pre-existing params + pagination 🤮-->
+  {% set query_string = request.query_string.decode('utf-8') %}
+  {% set page_param = 'page=' %}
+  {% if query_string %}
+  {% if 'page=' in query_string %}
+  {% set query_string = query_string | replace('?page=' ~ page, '') | replace('&page=' ~ page, '') | replace('&&', '&')
+  | replace('?&', '?') | replace('page=' ~ page, '') %}
+  {% endif %}
+  {% if query_string %}
+  {% set query_string = '?' ~ query_string ~ '&' ~ page_param %}
+  {% else %}
+  {% set query_string = '?' ~ page_param %}
+  {% endif %}
+  {% else %}
+  {% set query_string = '?' ~ page_param %}
+  {% endif %}
+
   {% if page > 1 %}
-  <li><a href="?page={{ page - 1 }}">Previous</a></li>
+  <li><a href="{{ request.path }}{{ query_string }}{{ page - 1 }}">Previous</a></li>
   {% endif %}
 
   <!--Show two pages either side of current page then ... last page
     E.g. 1 2 3 4 5 ... 19-->
   {% if page > 3 %}
-  <li><a href="?page=1">1</a></li>
+  <li><a href="{{ request.path }}{{ query_string }}1">1</a></li>
   <li> ... </li>
   {% endif %}
   {% for p in range((page-2)|max(1), (page+2)|min(total_pages) + 1) %}
   {% if p == page %}
   <li><strong>{{ p }}</strong></li>
   {% else %}
-  <li><a href="?page={{ p }}">{{ p }}</a></li>
+  <li><a href="{{ request.path }}{{ query_string }}{{ p }}">{{ p }}</a></li>
   {% endif %}
   {% endfor %}
   {% if page + 2 < total_pages %} <li> ... </li>
-    <li><a href="?page={{ total_pages }}">{{ total_pages }}</a></li>
+    <li><a href="{{ request.path }}{{ query_string }}{{ total_pages }}">{{ total_pages }}</a></li>
     {% endif %}
 
-    {% if page < total_pages %} <li><a href="?page={{ page + 1 }}">Next</a></li>
+    {% if page < total_pages %} <li><a href="{{ request.path }}{{ query_string }}{{ page + 1 }}">Next</a></li>
       {% endif %}
 </nav>

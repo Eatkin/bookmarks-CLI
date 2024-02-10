@@ -74,7 +74,23 @@ def categories():
     query = """SELECT DISTINCT folder FROM bookmarks
     ORDER BY folder ASC;"""
     categories = execute_query(query)
-    return render_template('html/categories.html', categories=categories)
+
+    # Query for all bookmarks in the category ordered by date IF we have a category parameter
+    category = request.args.get('category', None)
+    current_bookmarks = []
+    page = 1
+    total_pages = 1
+    if category:
+        query = f"""SELECT * FROM bookmarks
+        JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
+        WHERE folder = '{category}'
+        ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
+        category_bookmarks = execute_query(query)
+
+        current_bookmarks, page, total_pages = get_bookmarks_page_details(category_bookmarks)
+
+    # Render the template
+    return render_template('html/categories.html', category=category, categories=categories, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
 
 @app.route('/categories/<category>')
 def show_category(category):
