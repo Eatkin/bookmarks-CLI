@@ -7,7 +7,11 @@
 <div class="categories">
   <ul>
     {% for c in categories %}
+    {% if category == c[0] %}
+    <li><a href=" {{ url_for('categories', category=c[0]) }}" class="selected">{{ c[0] }}</a></li>
+    {% else %}
     <li><a href=" {{ url_for('categories', category=c[0]) }}">{{ c[0] }}</a></li>
+    {% endif %}
     {% endfor %}
   </ul>
 </div>

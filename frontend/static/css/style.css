@@ -1,5 +1,9 @@
+/* Pallette: https://coolors.co/palette/ccd5ae-e9edc9-fefae0-faedcd-d4a373 */
+
 body {
   font-family: Arial, sans-serif;
+  background-image: url("/static/assets/bg.png");
+  background-repeat: repeat;
 }
 
 h1,
@@ -63,4 +67,43 @@ h2 {
 
 .pagination a:hover {
   background-color: #ddd;
+}
+
+/* Main menu navigation */
+#menu-bar {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+#menu-bar ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+}
+
+.menu-bar-item {
+  margin: 0 1em;
+  transform: scale(1) translateY(0);
+  transition: all 0.3s ease-in-out;
+}
+
+.menu-bar-item:hover {
+  transform: scale(1.05) translateY(-5px);
+}
+
+.main-menu-link {
+  text-decoration: none;
+  font-size: 1.2em;
+  color: #000;
+  padding: 1em;
+  border-radius: 10px;
+  background-color: #CCD5AE;
+  transition: inherit;
+}
+
+.main-menu-link:hover {
+  color: #D4A373;
+  background-color: #E9EDC9;
 }

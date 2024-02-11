@@ -11,13 +11,15 @@
 <body>
   <header>
     <h1>Ed's Bookmark Page</h1>
-    <nav class="menu-bar">
+    <nav id="menu-bar">
       <ul>
-        <li><a href="{{ url_for('index') }}">Home</a></li>
-        <li><a href="{{ url_for('categories') }}">Browse by Category</a></li>
-        <li><a href="{{ url_for('tags') }}">Browse by Tag</a></li>
+        <li class="menu-bar-item"><a href="{{ url_for('index') }}" class="main-menu-link">Home</a></li>
+        <li class="menu-bar-item"><a href="{{ url_for('categories') }}" class="main-menu-link">Browse by Category</a>
+        </li>
+        <li class="menu-bar-item"><a href="{{ url_for('tags') }}" class="main-menu-link">Browse by Tag</a></li>
       </ul>
     </nav>
+
   </header>
   <main>
     {% block content %}
