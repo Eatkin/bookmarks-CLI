@@ -92,20 +92,6 @@ def categories():
     # Render the template
     return render_template('html/categories.html', category=category, categories=categories, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
 
-@app.route('/categories/<category>')
-def show_category(category):
-    # Query for all bookmarks in the category ordered by date
-    query = f"""SELECT * FROM bookmarks
-    JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-    WHERE folder = '{category}'
-    ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
-    category_bookmarks = execute_query(query)
-
-    current_bookmarks, page, total_pages = get_bookmarks_page_details(category_bookmarks)
-
-    # Render the template
-    return render_template('html/bookmarks.html', category=category, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
-
 # Routes by tag
 @app.route('/tags')
 def tags():
@@ -117,39 +103,28 @@ def tags():
     for row in execute_query(query):
         if row[0]:
             tags.update(row[0].split(','))
-    print(tags)
     tags = list(tags)
     tags.sort()
-    return render_template('html/tags.html', tags=tags)
 
-@app.route('/tags/<tag>')
-def show_tag(tag):
-    # Query for all bookmarks with the tag ordered by date
-    query = f"""SELECT * FROM bookmarks
-    JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-    WHERE tags LIKE '{tag}%,' OR tags LIKE ',%{tag}%,' OR tags LIKE ',%{tag}'
-    ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
-    tag_bookmarks = execute_query(query)
+    # Query for all bookmarks with the tag ordered by date IF we have a tag parameter
+    # This is VERY similar to categories route so we could refactor this later
+    # Going to move to firebase later so will all change anyway
+    # Also this will eventually allow for multiple tags to be selected so we can filter by multiple tags
+    tag = request.args.get('tag', None)
+    current_bookmarks = []
+    page = 1
+    total_pages = 1
+    if tag:
+        query = f"""SELECT * FROM bookmarks
+        JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
+        WHERE tags LIKE '{tag},%' OR tags LIKE '%,{tag},%' OR tags LIKE '%,{tag}'
+        ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
+        tag_bookmarks = execute_query(query)
 
-    current_bookmarks, page, total_pages = get_bookmarks_page_details(tag_bookmarks)
+        current_bookmarks, page, total_pages = get_bookmarks_page_details(tag_bookmarks)
 
     # Render the template
-    return render_template('html/bookmarks.html', tag=tag, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
-
-# Routes by date
-@app.route('/dates')
-def dates():
-    return 'This is the dates page'
-
-# Routes by year
-@app.route('/years/<year>')
-def year(year):
-    return f'This is the page for {year}'
-
-# Route by year/month
-@app.route('/years/<year>/<month>')
-def month(year, month):
-    return f'This is the page for {year}/{month}'
+    return render_template('html/tags.html', tag=tag, tags=tags, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
 
 # Routes by bookmark
 @app.route('/bookmarks/<bookmark_id>')
