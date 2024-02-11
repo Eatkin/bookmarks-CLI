@@ -7,7 +7,11 @@
 <div class="tags">
   <ul>
     {% for t in tags %}
-    <li><a href=" {{ url_for('tags', tag=t) }}">{{ t }}</a></li>
+    {% if tag == t %}
+    <li class="menu-bar-item"><a href=" {{ url_for('tags', tag=t) }}" class="nav-item selected">{{ t }}</a></li>
+    {% else %}
+    <li class="menu-bar-item"><a href=" {{ url_for('tags', tag=t) }}" class="nav-item">{{ t }}</a></li>
+    {% endif %}
     {% endfor %}
   </ul>
 </div>

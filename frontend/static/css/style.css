@@ -107,3 +107,61 @@ h2 {
   color: #D4A373;
   background-color: #E9EDC9;
 }
+
+/* Similar sort of thing for the categories/tags lists */
+.categories,
+.tags {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+.categories ul,
+.tags ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-around;
+}
+
+.menu-bar-item {
+  margin: 0.1em;
+  transform: scale(1) translateY(0);
+  transition: all 0.3s ease-in-out;
+  display: flex;
+  margin-top: 10px;
+}
+
+.menu-bar-item:hover {
+  transform: scale(1.05) translateY(-5px);
+}
+
+.nav-item {
+  text-decoration: none;
+  font-size: 0.8em;
+  color: #000;
+  padding: 1em;
+  border-radius: 2em;
+  background-color: #CCD5AE;
+  transition: inherit;
+}
+
+/* TODO: Why is this not working? */
+.nav_item:hover {
+  color: #D4A373;
+  background-color: #E9EDC9;
+}
+
+/* For nav items that have the selected class */
+.nav-item.selected {
+  color: #D4A373;
+  background-color: #E9EDC9;
+  transform: translateY(-5px);
+}
+
+.nav-item.selected:hover {
+  color: #D4A373;
+  background-color: #E9EDC9;
+}
