@@ -17,6 +17,7 @@
         <li class="menu-bar-item"><a href="{{ url_for('categories') }}" class="main-menu-link">Browse by Category</a>
         </li>
         <li class="menu-bar-item"><a href="{{ url_for('tags') }}" class="main-menu-link">Browse by Tag</a></li>
+        <li class="menu-bar-item"><a href="{{ url_for('random') }}" class="main-menu-link">Random</a></li>
       </ul>
     </nav>
 
@@ -26,5 +27,7 @@
     {% endblock %}
   </main>
 </body>
+
+{% include 'html/footer.html' %}
 
 </html>

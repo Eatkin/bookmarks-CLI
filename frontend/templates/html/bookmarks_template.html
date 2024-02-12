@@ -1,15 +1,14 @@
 {% for bookmark in bookmarks %}
-<!--Bookmark contents - (id, title, url, add_date, folder, id, content, relevant_content, description, tags, bookmark_id)-->
 <div class="bookmark">
-  <div class="bookmark__title"><a href="{{ bookmark[2] }}" target="_blank">{{ bookmark[1] }}</a></div>
-  <div class="bookmark__url">URL: <a href="{{ bookmark[2] }}" target="_blank">{{ bookmark[2] }}</a></div>
-  <div class="bookmark__date">{{ bookmark[3] }}</div>
-  <div class="bookmark__category">{{ bookmark[4] }}</div>
+  <div class="bookmark__title"><a href="{{ bookmark.url }}" target="_blank">{{ bookmark.title }}</a></div>
+  <div class="bookmark__url">URL: <a href="{{ bookmark.url }}" target="_blank">{{ bookmark.url }}</a></div>
+  <div class="bookmark__date">{{ bookmark.add_date }}</div>
+  <div class="bookmark__category">{{ bookmark.folder }}</div>
   {% if bookmark[8] %}
-  <div class="bookmark__description">{{ bookmark[8] }}</div>
+  <div class="bookmark__description">{{ bookmark.description }}</div>
   {% endif %}
-  {% if bookmark[9] %}
-  <div class="bookmark__tags">{{ bookmark[9] }}</div>
+  {% if bookmark.tags %}
+  <div class="bookmark__tags">{{ ', '.join(bookmark.tags) }}</div>
   {% endif %}
 </div>
 {% endfor %}

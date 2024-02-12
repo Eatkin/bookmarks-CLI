@@ -7,11 +7,11 @@
 <div class="categories">
   <ul>
     {% for c in categories %}
-    {% if category == c[0] %}
-    <li class="menu-bar-item"><a href=" {{ url_for('categories', category=c[0]) }}" class="nav-item selected">{{ c[0]
-        }}</a></li>
+    {% if category == c %}
+    <li class="menu-bar-item"><a href=" {{ url_for('categories', category=c) }}" class="nav-item selected">{{ c }}</a>
+    </li>
     {% else %}
-    <li class="menu-bar-item"><a href=" {{ url_for('categories', category=c[0]) }}" class="nav-item">{{ c[0] }}</a></li>
+    <li class="menu-bar-item"><a href=" {{ url_for('categories', category=c) }}" class="nav-item">{{ c }}</a></li>
     {% endif %}
     {% endfor %}
   </ul>

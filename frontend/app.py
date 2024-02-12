@@ -1,8 +1,19 @@
-import sqlite3
 import os
+import firebase_admin
+from datetime import datetime
+from firebase_admin import credentials
+from firebase_admin import firestore
 from random import choice
 from jinja2 import Environment
 from flask import Flask, render_template, request, redirect, url_for
+
+# Setup Firebase Admin SDK
+cred = credentials.Certificate(os.environ.get("SERVICE_WORKER"))
+firebase_admin.initialize_app(cred)
+
+# Get a reference to the Firestore database
+db = firestore.client()
+
 
 # Create the Flask app
 app = Flask(__name__, template_folder='templates', static_folder='static')
@@ -18,29 +29,63 @@ def get_min(a, b):
 app.jinja_env.filters['max'] = get_max
 app.jinja_env.filters['min'] = get_min
 
-# Get the database connection
-def get_db_connection():
-    db_path = os.path.join(os.path.dirname(__file__), 'bookmarks.db')
-    conn = sqlite3.connect(db_path)
-    query = """SELECT * FROM bookmarks
-    JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-    ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
-    cursor = conn.cursor()
-    cursor.execute(query)
-    return cursor
 
+# Function definitions
 def get_all_bookmarks():
-    cursor = get_db_connection()
-    return cursor.fetchall()
+    collection_ref = db.collection("data")
+    docs = collection_ref.stream()
 
-def execute_query(query):
-    cursor = get_db_connection()
-    cursor.execute(query)
-    return cursor.fetchall()
+    # Put the data into a list
+    data = []
+    for doc in docs:
+        data.append(doc.to_dict())
 
+    # Sort data by date with most recent first
+    data.sort(key=lambda x: datetime.strptime(x['add_date'], '%Y-%m-%d %H:%M:%S'), reverse=True)
 
+    return data
 
+def get_all_categories(bookmarks):
+    """Loop through the bookmarks and get all unique categories."""
+    categories = set()
+    for bookmark in bookmarks:
+        categories.add(bookmark['folder'])
+
+    # Sort
+    categories = list(categories)
+    categories = sorted(categories)
+    return categories
+
+def get_all_tags(bookmarks):
+    """Loop through the bookmarks and get all unique tags."""
+    tags = set()
+    for bookmark in bookmarks:
+        if bookmark['tags']:
+            tags.update(bookmark['tags'])
+
+    # Sort
+    tags = list(tags)
+    tags = sorted(tags)
+
+    return tags
+
+def get_by(bookmarks, key, value):
+    """Get all bookmarks with a certain value in their key"""
+    # Check if the key contains a list or a string
+    type_of = type(bookmarks[0][key])
+    if type_of == list:
+        return [b for b in bookmarks if value in b[key]]
+    else:
+        return [b for b in bookmarks if b[key] == value]
+
+# Globals
+bookmarks = get_all_bookmarks()
+unique_categories = get_all_categories(bookmarks)
+unique_tags = get_all_tags(bookmarks)
 PER_PAGE = 10
+
+# TODO: Randomiser uses queries
+
 
 def get_bookmarks_page_details(bookmarks):
     """Create a page of bookmarks from a list of bookmarks."""
@@ -60,7 +105,7 @@ def get_bookmarks_page_details(bookmarks):
 # Define the index route
 @app.route('/')
 def index():
-    bookmarks = get_all_bookmarks()
+    global bookmarks
 
     current_bookmarks, page, total_pages = get_bookmarks_page_details(bookmarks)
 
@@ -70,10 +115,7 @@ def index():
 # Routes by category
 @app.route('/categories')
 def categories():
-    # Query to get all unique categories
-    query = """SELECT DISTINCT folder FROM bookmarks
-    ORDER BY folder ASC;"""
-    categories = execute_query(query)
+    global unique_categories, bookmarks
 
     # Query for all bookmarks in the category ordered by date IF we have a category parameter
     category = request.args.get('category', None)
@@ -81,60 +123,37 @@ def categories():
     page = 1
     total_pages = 1
     if category:
-        query = f"""SELECT * FROM bookmarks
-        JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-        WHERE folder = '{category}'
-        ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
-        category_bookmarks = execute_query(query)
+        category_bookmarks = get_by(bookmarks, 'folder', category)
 
         current_bookmarks, page, total_pages = get_bookmarks_page_details(category_bookmarks)
 
     # Render the template
-    return render_template('html/categories.html', category=category, categories=categories, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
+    return render_template('html/categories.html', category=category, categories=unique_categories, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
 
 # Routes by tag
 @app.route('/tags')
 def tags():
-    query = """SELECT DISTINCT tags FROM bookmarks
-    JOIN descriptions ON bookmarks.id = descriptions.bookmark_id;"""
+    global unique_tags, bookmarks
 
-    # The tags field contains 3 tags separated by commas so we need to create a set of all tags
-    tags = set()
-    for row in execute_query(query):
-        if row[0]:
-            tags.update(row[0].split(','))
-    tags = list(tags)
-    tags.sort()
-
-    # Query for all bookmarks with the tag ordered by date IF we have a tag parameter
-    # This is VERY similar to categories route so we could refactor this later
-    # Going to move to firebase later so will all change anyway
-    # Also this will eventually allow for multiple tags to be selected so we can filter by multiple tags
     tag = request.args.get('tag', None)
     current_bookmarks = []
     page = 1
     total_pages = 1
     if tag:
-        query = f"""SELECT * FROM bookmarks
-        JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-        WHERE tags LIKE '{tag},%' OR tags LIKE '%,{tag},%' OR tags LIKE '%,{tag}'
-        ORDER BY strftime('%Y-%m-%d %H:%M:%S', bookmarks.add_date) DESC;"""
-        tag_bookmarks = execute_query(query)
+        tag_bookmarks = get_by(bookmarks, 'tags', tag)
 
         current_bookmarks, page, total_pages = get_bookmarks_page_details(tag_bookmarks)
 
     # Render the template
-    return render_template('html/tags.html', tag=tag, tags=tags, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
+    return render_template('html/tags.html', tag=tag, tags=unique_tags, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
 
 # Routes by bookmark
 @app.route('/bookmarks/<bookmark_id>')
 def bookmark(bookmark_id):
-    # Get the bookmark info from the database
-    query = f"""SELECT * FROM bookmarks
-    JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-    WHERE bookmarks.id = {bookmark_id};"""
-    result = execute_query(query)
-    return f'This is the page for bookmark {bookmark_id} with info {result}'
+    global bookmarks
+    # Get the bookmark with the given ID
+    bookmark = get_by(bookmarks, 'id', int(bookmark_id))
+    return render_template('html/bookmark_viewer.html', bookmarks=bookmark, page=1, total_pages=1)
 
 @app.route('/random')
 def random():
@@ -148,36 +167,38 @@ def random():
     tag = request.args.get('tag', None)
     category = request.args.get('category', None)
 
-
     # If there's no args then just pick a random bookmark
     if not any([year, month, tag, category]):
-        bookmarks = get_all_bookmarks()
-        bookmark = choice(bookmarks)[0]
+        pass
     else:
-        # Construct a query
-        query = """SELECT * FROM bookmarks
-        JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-        """
-        # Add where clauses
-        where_clauses = []
-        if year:
-            where_clauses.append(f"strftime('%Y', bookmarks.add_date) = '{year}'")
-        if month:
-            where_clauses.append(f"strftime('%m', bookmarks.add_date) = '{month}'")
-        if tag:
-            where_clauses.append(f"tags LIKE '%{tag}%'")
-        if category:
-            where_clauses.append(f"folder = '{category}'")
-        # Join and complete the query
-        if where_clauses:
-            query += "WHERE " + " AND ".join(where_clauses)
-        query += " ORDER BY RANDOM() LIMIT 1;"
+        pass
+        # # Construct a query
+        # query = """SELECT * FROM bookmarks
+        # JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
+        # """
+        # # Add where clauses
+        # where_clauses = []
+        # if year:
+        #     where_clauses.append(f"strftime('%Y', bookmarks.add_date) = '{year}'")
+        # if month:
+        #     where_clauses.append(f"strftime('%m', bookmarks.add_date) = '{month}'")
+        # if tag:
+        #     where_clauses.append(f"tags LIKE '%{tag}%'")
+        # if category:
+        #     where_clauses.append(f"folder = '{category}'")
+        # # Join and complete the query
+        # if where_clauses:
+        #     query += "WHERE " + " AND ".join(where_clauses)
+        # query += " ORDER BY RANDOM() LIMIT 1;"
 
-        # Execute the query
-        bookmark = execute_query(query)[0][0]
+        # # Execute the query
+        # bookmark = execute_query(query)[0][0]
+
+    bookmark = choice(bookmarks)
+    id = bookmark['id']
 
     # TODO: Go to an error page if no bookmarks are found with the given restrictions
 
     # Redirect to the bookmark page
     # TODO: Add query parameters to the redirect so we can keep the restrictions for generating another random bookmark
-    return redirect(url_for('bookmark', bookmark_id=bookmark))
+    return redirect(url_for('bookmark', bookmark_id=id))
