@@ -1,8 +1,7 @@
 import os
 import firebase_admin
 from datetime import datetime
-from firebase_admin import credentials
-from firebase_admin import firestore
+from firebase_admin import credentials, firestore
 from random import choice
 from jinja2 import Environment
 from flask import Flask, render_template, request, redirect, url_for
