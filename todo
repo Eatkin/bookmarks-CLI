@@ -5,6 +5,5 @@
 
 * Multiple tags in parameters?
 
-* CSS broken? No padding and no borders for the tables
-
-* Don't forget to set the update_firestore util to update bookmarks.json to add new_bookmarks.json to the end for caching
+* Randomiser - use a form + query params to select a random post
+* Then add a re-roll button to the page

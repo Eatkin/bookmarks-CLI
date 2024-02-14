@@ -9,6 +9,7 @@ body {
 h1,
 h2 {
   text-align: center;
+  color: #a35f4d;
 }
 
 footer {
@@ -21,14 +22,18 @@ footer {
 .bookmark {
   width: 90%;
   margin: auto;
-  margin-top: 0px;
+  margin-top: 20px;
   margin-bottom: 10px;
-  border-bottom: 1px solid #000;
+  padding: 5px;
   padding-bottom: 20px;
+  background-color: rgba(254, 250, 224, 0.8);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  color: #D4A373;
+  transition: background-color 0.3s ease-in-out;
 }
 
-.bookmark:first-of-type {
-  margin-top: 20px;
+.bookmark:hover {
+  background-color: rgba(254, 250, 224, 1);
 }
 
 .bookmark__title {
@@ -64,9 +69,9 @@ footer {
 .bookmark a {
   text-decoration: none;
   position: relative;
-  color: #000;
   transition: color 0.3s ease, transform 0.3s ease;
   transform: translateY(0);
+  color: inherit;
 }
 
 .bookmark a:hover {
@@ -81,7 +86,7 @@ footer {
   content: "";
   height: 2px;
   width: 0;
-  transition: width 0.3s ease;
+  transition: width 1s ease, height 0.3s ease;
   background-color: #D4A373;
 }
 
