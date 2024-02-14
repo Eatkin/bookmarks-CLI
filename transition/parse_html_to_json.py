@@ -58,7 +58,7 @@ json_urls = [bookmark['url'] for bookmark in bookmarks_json]
 # Get the maximum id from the json file
 max_id = max([bookmark['id'] for bookmark in bookmarks_json])
 
-# Make them into dictionaries of id, title, url, folder, description
+# Make them into dictionaries of id, title, url, add_date, folder, description
 for i, url in enumerate(urls):
     target_folder = bookmarks[i][3]
     if url in json_urls:
@@ -70,10 +70,17 @@ for i, url in enumerate(urls):
     max_id += 1
     title = soup.find('a', href=url).text
     folder = target_folder
+    add_date = bookmarks[i][2]
     description = ''
-    bookmarks_json.append({'id': max_id, 'title': title, 'url': url, 'folder': folder, 'description': description})
+    bookmarks_json.append({'id': max_id, 'title': title, 'url': url, 'add_date': add_date, 'folder': folder, 'description': description})
 
     # Repair descriptions will be used for descriptions
+
+# Repair the add dates
+for i, bookmark in enumerate(bookmarks_json):
+    if "add_date" not in bookmark:
+        print("Repairing add date for", bookmarks_json[i]['title'])
+        bookmarks_json[i]["add_date"] = str(bookmarks[i][2])
 
 # Write the json file
 with open('bookmarks.json', 'w') as f:

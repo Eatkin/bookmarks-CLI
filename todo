@@ -1,22 +1,10 @@
-* Planning for tags/categories page
-* * They will be a list of tags/categories along the top of the page
-* * Once one is selected it adds a query parameter to the URL and finds bookmarks with that tag
-* * Differences - you can only select one category but can select many tags
-* * This will work better when the new tagging system is in place
-* * So we need a single categories/tags page that just uses parameters
-* * These can probably use the same template, just with different data
-
-* NLP for tagging is not very good, this has some implications
-* * No longer need to store the entire page content in the database, just need the meta description
-* * I need to manually tag now, so can write a CL tool to do this which will prompt me for untagged pages
-
-* Once I'm happy with flask and everything I want to deploy it to a server and have it running 24/7
-* That means I'm going to start using Firestore for storing and retrieving the data
-
-* Once everything is on Firestore I need to write some tools to help me manage the data
-
 * BUG: The scrollover effect for tags/cactegories doesn't change the colours
 
 * OPTIONAL: When you select a category or tag it should target the main content using id and #id
+(This is possibly annoying for the user)
 
-* All the transition/ scripts are jank as fuck and we need decent scripts in place for parsing things
+* Multiple tags in parameters?
+
+* CSS broken? No padding and no borders for the tables
+
+* Don't forget to set the update_firestore util to update bookmarks.json to add new_bookmarks.json to the end for caching

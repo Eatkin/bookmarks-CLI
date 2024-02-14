@@ -12,3 +12,6 @@ clear_logs:
 clear_db:
 	@echo "Deleting the database lol"
 	rm bookmarks.db
+
+submit_build:
+	cd frontend &&	gcloud builds submit --tag europe-west2-docker.pkg.dev/bookmarks-414106/bookmarks/bookmarks:latest

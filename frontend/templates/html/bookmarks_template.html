@@ -1,5 +1,5 @@
 {% for bookmark in bookmarks %}
-<div id="bookmarks">
+<div class="bookmark">
   <div class="bookmark__title"><a href="{{ bookmark.url }}" target="_blank">{{ bookmark.title }}</a></div>
   <div class="bookmark__url">URL: <a href="{{ bookmark.url }}" target="_blank">{{ bookmark.url }}</a></div>
   {% if bookmark.description %}
