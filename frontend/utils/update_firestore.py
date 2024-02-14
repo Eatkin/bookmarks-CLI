@@ -105,9 +105,14 @@ for i, url in enumerate(urls):
     new_json.append({'id': max_id, 'title': title, 'url': url, 'add_date': str(add_date), 'folder': folder, 'description': description, 'tags': ["UNTAGGED"]})
 
 # Output as new json
-# This is just for verification actually
+# This is just for verification really
 with open('new_bookmarks.json', 'w') as f:
     json.dump(new_json, f, indent=4)
+
+# Concat the new json with the old json and output to bookmarks.json
+bookmarks_json += new_json
+with open('bookmarks.json', 'w') as f:
+    json.dump(bookmarks_json, f, indent=4)
 
 # Upload that shit to the firestore
 batch = db.batch()
