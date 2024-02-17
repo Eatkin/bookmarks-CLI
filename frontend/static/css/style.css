@@ -154,6 +154,7 @@ footer {
   border-radius: 10px;
   background-color: #CCD5AE;
   transition: inherit;
+  text-align: center;
 }
 
 .main-menu-link:hover {
@@ -202,7 +203,7 @@ footer {
 }
 
 /* TODO: Why is this not working? */
-.nav_item:hover {
+.nav-item:hover {
   color: #D4A373;
   background-color: #E9EDC9;
 }
