@@ -277,6 +277,7 @@ input:hover {
   background-color: #E9EDC9;
   color: #D4A373;
   transform: translateY(-5px);
+  cursor: pointer;
 }
 
 select {
