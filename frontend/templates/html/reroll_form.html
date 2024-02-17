@@ -1,0 +1,12 @@
+<form id="reroll">
+  {% if category %}
+  <input type="hidden" name="category" value="{{ category }}">
+  {% endif %}
+  {% if tag %}
+  <input type="hidden" name="tag" value="{{ tag }}">
+  {% endif %}
+  {% if lucky %}
+  <input type="hidden" name="lucky" value="{{ lucky }}">
+  {% endif %}
+  <input type="submit" value="Re-roll">
+</form>

@@ -218,3 +218,72 @@ footer {
   color: #D4A373;
   background-color: #E9EDC9;
 }
+
+/* Form styles */
+/* Form containing the re-roll button */
+#reroll {
+  display: flex;
+  justify-content: center;
+  margin-top: 40px;
+}
+
+/* This is the div for the randomiser */
+#randomiser {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  width: 80%;
+  margin: auto;
+  margin-top: 40px;
+  background-color: rgba(254, 250, 224, 0.8);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  color: #D4A373;
+  transition: background-color 0.3s ease-in-out;
+}
+
+#randomiser label,
+#randomiser select,
+#randomiser option,
+#randomiser input {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin: auto;
+  margin-top: 10px;
+}
+
+#randomiser form {
+  margin: auto;
+  padding: 10px;
+}
+
+#randomiser:hover {
+  background-color: rgba(254, 250, 224, 1);
+}
+
+/* Style the actual buttons */
+input {
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #CCD5AE;
+  color: #000;
+  border: none;
+  transition: all 0.3s ease-in-out;
+}
+
+input:hover {
+  background-color: #E9EDC9;
+  color: #D4A373;
+  transform: translateY(-5px);
+}
+
+select {
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #CCD5AE;
+  color: #000;
+  border: none;
+  transition: all 0.3s ease-in-out;
+}

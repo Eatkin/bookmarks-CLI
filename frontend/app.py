@@ -154,50 +154,26 @@ def bookmark(bookmark_id):
     bookmark = get_by(bookmarks, 'id', int(bookmark_id))
     return render_template('html/bookmark_viewer.html', bookmarks=bookmark, page=1, total_pages=1)
 
+@app.route('/randomiser')
+def randomiser():
+    return render_template('html/randomiser.html', categories=unique_categories, tags=unique_tags)
+
 @app.route('/random')
 def random():
-    # TODO: Set this up with some kind of form to select the restrictions
-    # Then it gets passed to the bookmarks/<bookmark_id> route with URL parameters
-    # From there we can re-randomise with the same restrictions
-
-    # Params for year/month/tag/category so we can randomise with restrictions
-    year = request.args.get('year', None)
-    month = request.args.get('month', None)
-    tag = request.args.get('tag', None)
+    global bookmarks
+    # Params are category/tag or lucky
     category = request.args.get('category', None)
+    tag = request.args.get('tag', None)
+    lucky = request.args.get('lucky', None)
 
-    # If there's no args then just pick a random bookmark
-    if not any([year, month, tag, category]):
-        pass
-    else:
-        pass
-        # # Construct a query
-        # query = """SELECT * FROM bookmarks
-        # JOIN descriptions ON bookmarks.id = descriptions.bookmark_id
-        # """
-        # # Add where clauses
-        # where_clauses = []
-        # if year:
-        #     where_clauses.append(f"strftime('%Y', bookmarks.add_date) = '{year}'")
-        # if month:
-        #     where_clauses.append(f"strftime('%m', bookmarks.add_date) = '{month}'")
-        # if tag:
-        #     where_clauses.append(f"tags LIKE '%{tag}%'")
-        # if category:
-        #     where_clauses.append(f"folder = '{category}'")
-        # # Join and complete the query
-        # if where_clauses:
-        #     query += "WHERE " + " AND ".join(where_clauses)
-        # query += " ORDER BY RANDOM() LIMIT 1;"
+    bookmarks_pool = bookmarks
+    if category:
+        bookmarks_pool = get_by(bookmarks, 'folder', category)
+    elif tag:
+        bookmarks_pool = get_by(bookmarks, 'tags', tag)
 
-        # # Execute the query
-        # bookmark = execute_query(query)[0][0]
+    bookmark = choice(bookmarks_pool)
+    bookmark = [bookmark]
 
-    bookmark = choice(bookmarks)
-    id = bookmark['id']
-
-    # TODO: Go to an error page if no bookmarks are found with the given restrictions
-
-    # Redirect to the bookmark page
-    # TODO: Add query parameters to the redirect so we can keep the restrictions for generating another random bookmark
-    return redirect(url_for('bookmark', bookmark_id=id))
+    # Show the random page which is just the bookmark viewer page with a re-roll button at the bottom
+    return render_template('html/random.html', bookmarks=bookmark, page=None, total_pages=1, random=True, category=category, tag=tag, lucky=lucky)

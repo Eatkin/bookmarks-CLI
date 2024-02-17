@@ -10,7 +10,15 @@
   {% if bookmark.tags %}
   <div class="bookmark__tags">{{ ', '.join(bookmark.tags) }}</div>
   {% endif %}
+
+  <!-- If random = True we're on the randomiser page so insert the re-roll button -->
+  {% if random %}
+  {% include "html/reroll_form.html" %}
+  {% endif %}
+
 </div>
 {% endfor %}
 
+{% if page %}
 {% include "html/pagination.html" %}
+{% endif %}
