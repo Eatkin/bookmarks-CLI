@@ -6,13 +6,14 @@
 
 <div class="categories">
   <ul>
-    {% for c in categories %}
+    {% for c, count in categories %}
     {% if category == c %}
     <li class="menu-bar-item"><a href=" {{ url_for('categories', category=c) }}" class="nav-item selected">{{
-        c }}</a>
+        c }} ({{ count }})</a>
     </li>
     {% else %}
-    <li class="menu-bar-item"><a href=" {{ url_for('categories', category=c) }}" class="nav-item">{{ c }}</a>
+    <li class="menu-bar-item"><a href=" {{ url_for('categories', category=c) }}" class="nav-item">{{ c }} ({{ count
+        }})</a>
     </li>
     {% endif %}
     {% endfor %}

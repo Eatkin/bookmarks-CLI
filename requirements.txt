@@ -4,3 +4,5 @@ nltk
 requests-html
 flask
 firebase-admin
+google-cloud-bigquery
+pyarrow

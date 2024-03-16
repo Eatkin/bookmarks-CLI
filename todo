@@ -1,6 +1,10 @@
-* BUG: The scrollover effect for tags/cactegories doesn't change the colours
-
 * OPTIONAL: When you select a category or tag it should target the main content using id and #id
 (This is possibly annoying for the user)
 
 * Multiple tags in parameters?
+
+* List tags by popularity rather than alphabetically
+
+* Migrate to BQ - started, just need to do the category, tag and randomiser pages
+
+* Update my utilities to use BQ

@@ -1,14 +1,14 @@
 {% for bookmark in bookmarks %}
 <div class="bookmark">
-  <div class="bookmark__title"><a href="{{ bookmark.url }}" target="_blank">{{ bookmark.title }}</a></div>
-  <div class="bookmark__url">URL: <a href="{{ bookmark.url }}" target="_blank">{{ bookmark.url }}</a></div>
-  {% if bookmark.description %}
-  <div class="bookmark__description">{{ bookmark.description }}</div>
+  <div class="bookmark__title"><a href="{{ bookmark.URL }}" target="_blank">{{ bookmark.Title }}</a></div>
+  <div class="bookmark__url">URL: <a href="{{ bookmark.URL }}" target="_blank">{{ bookmark.URL }}</a></div>
+  {% if bookmark.Description %}
+  <div class="bookmark__description">{{ bookmark.Description }}</div>
   {% endif %}
-  <div class="bookmark__date">{{ bookmark.add_date }}</div>
-  <div class="bookmark__category">{{ bookmark.folder }}</div>
-  {% if bookmark.tags %}
-  <div class="bookmark__tags">{{ ', '.join(bookmark.tags) }}</div>
+  <div class="bookmark__date">{{ bookmark.Date_Added }}</div>
+  <div class="bookmark__category">{{ bookmark.Category }}</div>
+  {% if bookmark.Tags %}
+  <div class="bookmark__tags">{{ ', '.join(bookmark.Tags) }}</div>
   {% endif %}
 
   <!-- If random = True we're on the randomiser page so insert the re-roll button -->
