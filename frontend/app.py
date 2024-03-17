@@ -201,6 +201,40 @@ def get_bookmarks_by_tag(tag, page):
 
     return bookmarks
 
+def get_random_bookmark(by=None, category=None, tag=None):
+    global client, project_id, dataset_id
+    where_clause = ''
+    if by == 'category':
+        where_clause = f"WHERE categories.Name = '{category}'"
+    elif by == 'tag':
+        where_clause = f"WHERE tags.Name = '{tag}'"
+
+    query = f"""
+    SELECT bookmarks.Title, bookmarks.Description, bookmarks.URL, bookmarks.Date_Added,
+    categories.Name as Category,
+    STRING_AGG(tags.Name, ' ') AS Tags
+    FROM {project_id}.{dataset_id}.bookmarks as bookmarks
+    JOIN {project_id}.{dataset_id}.categories as categories
+    ON bookmarks.Category_ID = categories.Category_ID
+    JOIN {project_id}.{dataset_id}.bookmarktags as bookmarktags
+    ON bookmarks.Bookmark_ID = bookmarktags.Bookmark_ID
+    JOIN {project_id}.{dataset_id}.tags as tags
+    ON bookmarktags.Tag_ID = tags.Tag_ID
+    {where_clause}
+    GROUP BY bookmarks.Title, bookmarks.Description, bookmarks.URL, bookmarks.Date_Added, categories.Name
+    ORDER BY RAND()
+    LIMIT 1"""
+
+    # Now get it into a list of dictionaries
+    query_job = client.query(query)
+    bookmarks = query_job.result()
+    bookmarks = [dict(row) for row in bookmarks]
+
+    # Make the tags a list
+    for bookmark in bookmarks:
+        bookmark['Tags'] = bookmark['Tags'].split(' ')
+
+    return bookmarks
 
 # Globals
 PER_PAGE = 10
@@ -276,13 +310,14 @@ def tags():
     # Render the template
     return render_template('html/tags.html', tag=tag, tags=unique_tags, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
 
-# Routes by bookmark
-@app.route('/bookmarks/<bookmark_id>')
-def bookmark(bookmark_id):
-    global bookmarks
-    # Get the bookmark with the given ID
-    bookmark = get_by(bookmarks, 'id', int(bookmark_id))
-    return render_template('html/bookmark_viewer.html', bookmarks=bookmark, page=1, total_pages=1)
+# Routes by bookmarko
+# Deprecated in favor of randomiser
+# @app.route('/bookmarks/<bookmark_id>')
+# def bookmark(bookmark_id):
+#     global bookmarks
+#     # Get the bookmark with the given ID
+#     bookmark = get_by(bookmarks, 'id', int(bookmark_id))
+#     return render_template('html/bookmark_viewer.html', bookmarks=bookmark, page=1, total_pages=1)
 
 @app.route('/randomiser')
 def randomiser():
@@ -290,20 +325,17 @@ def randomiser():
 
 @app.route('/random')
 def random():
-    global bookmarks
     # Params are category/tag or lucky
     category = request.args.get('category', None)
     tag = request.args.get('tag', None)
     lucky = request.args.get('lucky', None)
 
-    bookmarks_pool = bookmarks
     if category:
-        bookmarks_pool = get_by(bookmarks, 'folder', category)
+        bookmark = get_random_bookmark(by='category', category=category)
     elif tag:
-        bookmarks_pool = get_by(bookmarks, 'tags', tag)
-
-    bookmark = choice(bookmarks_pool)
-    bookmark = [bookmark]
+        bookmark = get_random_bookmark(by='tag', tag=tag)
+    else:
+        bookmark = get_random_bookmark()
 
     # Show the random page which is just the bookmark viewer page with a re-roll button at the bottom
     return render_template('html/random.html', bookmarks=bookmark, page=None, total_pages=1, random=True, category=category, tag=tag, lucky=lucky)

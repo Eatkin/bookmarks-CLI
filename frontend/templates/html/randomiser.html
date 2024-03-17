@@ -10,8 +10,8 @@
     <label for="category">Category:</label>
     <select name="category" id="category">
       <option value="all">All</option>
-      {% for c in categories %}
-      <option value="{{ c }}">{{ c }}</option>
+      {% for c, count in categories %}
+      <option value="{{ c }}">{{ c }} ({{ count }})</option>
       {% endfor %}
     </select>
     <input type="submit" value="Randomise">
@@ -20,8 +20,8 @@
     <label for="tag">Tag:</label>
     <select name="tag" id="tag">
       <option value="all">All</option>
-      {% for t in tags %}
-      <option value="{{ t }}">{{ t }}</option>
+      {% for t, count in tags %}
+      <option value="{{ t }}">{{ t }} ({{ count }})</option>
       {% endfor %}
     </select>
     <input type="submit" value="Randomise">
