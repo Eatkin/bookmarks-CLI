@@ -141,8 +141,6 @@ def get_bookmarks_by_category(category, page):
 
 def get_bookmarks_by_tag(tag, page):
     global client, project_id, dataset_id, PER_PAGE
-    # BUG: This query gets ONLY one tag for each bookmark. If a bookmark has multiple tags, it will not be returned.
-    # Can fix this using a subquery to get all bookmarks with the tag and then join on that.
     query = f"""
     SELECT bookmarks.Title, bookmarks.Description, bookmarks.URL, bookmarks.Date_Added,
     categories.Name as Category,
@@ -154,7 +152,12 @@ def get_bookmarks_by_tag(tag, page):
     ON bookmarks.Bookmark_ID = bookmarktags.Bookmark_ID
     JOIN {project_id}.{dataset_id}.tags as tags
     ON bookmarktags.Tag_ID = tags.Tag_ID
-    WHERE tags.Name = '{tag}'
+    WHERE bookmarks.Bookmark_ID IN (
+        SELECT Bookmark_ID
+        FROM {project_id}.{dataset_id}.bookmarktags as bookmarktags
+        JOIN {project_id}.{dataset_id}.tags as tags
+        ON bookmarktags.Tag_ID = tags.Tag_ID
+        WHERE tags.Name = '{tag}')
     GROUP BY bookmarks.Title, bookmarks.Description, bookmarks.URL, bookmarks.Date_Added, categories.Name
     ORDER BY Date_Added DESC
     LIMIT {PER_PAGE}
