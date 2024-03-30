@@ -1,20 +1,8 @@
-import os
-import firebase_admin
-from datetime import datetime
-from firebase_admin import credentials, firestore
 from random import choice
-from jinja2 import Environment
 from flask import Flask, render_template, request, redirect, url_for
 
 # Import bigquery
 from google.cloud import bigquery
-
-# # Setup Firebase Admin SDK
-# cred = credentials.Certificate(os.environ.get("SERVICE_WORKER"))
-# firebase_admin.initialize_app(cred)
-
-# # Get a reference to the Firestore database
-# db = firestore.client()
 
 # Create a BigQuery client
 project_id = 'bookmarks-414106'
@@ -34,26 +22,6 @@ def get_min(a, b):
 # Register custom filters with Jinja2 environment
 app.jinja_env.filters['max'] = get_max
 app.jinja_env.filters['min'] = get_min
-
-
-# Function definitions
-# REPLACED WITH get_categories() since that also includes the count
-# def get_all_categories():
-#     """"Query all the categories from the bookmarks."""
-#     global client, project_id, dataset_id
-#     table_id = 'categories'
-#     reference = f'{project_id}.{dataset_id}.{table_id}'
-#     query = f"""
-#     SELECT name FROM {reference}
-#     ORDER BY name ASC"""
-
-#     # Make the query
-#     query_job = client.query(query)
-#     # Get the results
-#     categories = query_job.result()
-#     categories = [row.name for row in categories]
-
-#     return categories
 
 def get_all_tags():
     """Get all unique tags and return a list of tuples containing the tag and the number of times it appears."""
@@ -173,6 +141,8 @@ def get_bookmarks_by_category(category, page):
 
 def get_bookmarks_by_tag(tag, page):
     global client, project_id, dataset_id, PER_PAGE
+    # BUG: This query gets ONLY one tag for each bookmark. If a bookmark has multiple tags, it will not be returned.
+    # Can fix this using a subquery to get all bookmarks with the tag and then join on that.
     query = f"""
     SELECT bookmarks.Title, bookmarks.Description, bookmarks.URL, bookmarks.Date_Added,
     categories.Name as Category,
@@ -266,12 +236,13 @@ def categories():
     except:
         page = 1
 
+    # Get the bookmarks
+    current_bookmarks = get_bookmarks_by_category(category, page)
+
     # Page count
     if category is None:
         total_pages = 1
     else:
-        # Get the bookmarks
-        current_bookmarks = get_bookmarks_by_category(category, page)
         try:
             # Find the index of the category
             index = [x[0] for x in unique_categories].index(category)
@@ -309,15 +280,6 @@ def tags():
 
     # Render the template
     return render_template('html/tags.html', tag=tag, tags=unique_tags, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
-
-# Routes by bookmarko
-# Deprecated in favor of randomiser
-# @app.route('/bookmarks/<bookmark_id>')
-# def bookmark(bookmark_id):
-#     global bookmarks
-#     # Get the bookmark with the given ID
-#     bookmark = get_by(bookmarks, 'id', int(bookmark_id))
-#     return render_template('html/bookmark_viewer.html', bookmarks=bookmark, page=1, total_pages=1)
 
 @app.route('/randomiser')
 def randomiser():

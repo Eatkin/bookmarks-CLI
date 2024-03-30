@@ -1,2 +1,3 @@
-* Update my utilities to use BQ
-* So setup uploading bookmarks and tagging them
+* Stupid bug on browsing by tag where it only shows the tag you're browsing by on the bookmarks
+* Once this is done I can alter all the route to be /bookmarks so I can create a homepage
+* Can use cloud storage for the blog page which I will do at some point
