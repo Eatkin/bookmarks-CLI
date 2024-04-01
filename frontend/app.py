@@ -33,7 +33,7 @@ def get_all_tags():
     JOIN {project_id}.{dataset_id}.tags as tags
     ON bookmarktags.Tag_ID = tags.Tag_ID
     GROUP BY tags.Name
-    ORDER BY count DESC"""
+    ORDER BY count DESC, tags.Name ASC"""
 
     # Make the query
     query_job = client.query(query)
@@ -281,8 +281,10 @@ def tags():
     else:
         total_pages = 1
 
+    n_tags = len(unique_tags)
+
     # Render the template
-    return render_template('html/tags.html', tag=tag, tags=unique_tags, bookmarks=current_bookmarks, page=page, total_pages=total_pages)
+    return render_template('html/tags.html', tag=tag, tags=unique_tags, bookmarks=current_bookmarks, page=page, total_pages=total_pages, n_tags=n_tags)
 
 @app.route('/randomiser')
 def randomiser():

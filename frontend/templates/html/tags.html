@@ -6,15 +6,43 @@
 
 <div class="tags">
   <ul>
-    {% for t, count in tags %}
-    {% if tag == t %}
-    <li class="menu-bar-item"><a href=" {{ url_for('tags', tag=t) }}" class="nav-item selected">{{ t }} ({{ count
-        }})</a>
-    </li>
-    {% else %}
+    <!-- Selected tag -->
+    {% if tag != None %}
+    <li class="menu-bar-item"><a href=" {{ url_for('tags', tag=tag) }}" class="nav-item selected">{{ tag }}</a></li>
+    {% endif %}
+    <!-- All tags -->
+    {% for t, count in tags[:50] %}
+    {% if tag != t %}
     <li class="menu-bar-item"><a href=" {{ url_for('tags', tag=t) }}" class="nav-item">{{ t }} ({{ count }})</a></li>
     {% endif %}
     {% endfor %}
+    <!-- Hidden tags -->
+    {% if n_tags > 50 %}
+    <!-- Show more button -->
+    <li class="menu-bar-item" id="show-more"><a href="" class="nav-item">Show {{ n_tags - 50 }}
+        more tags</a></li>
+    {% for t, count in tags[50:] %}
+    {% if tag != t %}
+    <li class="menu-bar-item"><a href=" {{ url_for('tags', tag=t) }}" class="nav-item hidden">{{ t }} ({{ count }})</a>
+    </li>
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+
+
+    <!-- JS for more tags being clicked -->
+    <script>
+      document.getElementById('show-more').addEventListener('click', function () {
+        // Don't follow the link
+        event.preventDefault();
+        var hiddenTags = document.querySelectorAll('.hidden');
+        hiddenTags.forEach(function (tag) {
+          // Remove the hidden class
+          tag.classList.remove('hidden');
+        });
+        document.getElementById('show-more').style.display = 'none';
+      });
+    </script>
   </ul>
 </div>
 
